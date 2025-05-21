@@ -23,11 +23,15 @@ Follow these steps to set up your project environment.
 
 #### 1. Activate Virtual Environment (Windows PowerShell)
 
+**Note:** Depending on your installation, you might require to use <code>py</code> instead of <code>python</code> whenever trying to run a python command presented in this documentation
+
 It's recommended to use a virtual environment to manage project dependencies:
 
 ``` powershell
-\venv\Scripts\Activate.ps1
-```
+python -m venv venv
+Set-ExecutionPolicy Unrestricted -Scope Process
+.\\venv\Scripts\Activate.ps1
+ ```
 
 #### 2. Install Dependencies
 
@@ -57,6 +61,37 @@ project/
 └── README.md           # This file
 ```
 
+Tentative idea:
+```
+project/
+├── data/
+│   ├── 00_raw/          # (Optional) Raw Wikipedia dump
+│   ├── 10_parsed/       # Title + raw Wikitext (Parquet)
+│   ├── 20_clean/        # Cleaned text + links (Parquet)
+│   ├── 30_embeddings/   # BERT embeddings (NumPy/HDF5)
+│   └── 40_graph/        # Graph data (NetworkX/CSV)
+│
+├── models/              # Saved ML models (optional)
+│
+├── src/
+│   ├── 00_ingest.py     # Download Wikipedia dumps
+│   ├── 10_parse.py      # Parse XML → Parquet
+│   ├── 20_transform.py  # Clean text & extract links
+│   ├── 30_embed.py      # Generate BERT embeddings
+│   ├── 40_cluster.py    # Clustering (K-Means, GNN, etc.)
+│   ├── 50_graph.py      # Build & analyze the graph
+│   └── 60_streamlit.py  # Streamlit dashboard
+│
+├── reports/             # Generated reports (PDF, plots, etc.)
+│   ├── figures/         # Visualizations
+│   └── final_report.md  # Auto-generated report
+│
+├── app/                 # Streamlit app files
+│   ├── main.py          # Streamlit entry point
+│   └── assets/          # CSS/JS (if needed)
+│
+└── README.md            # Project documentation
+```
 
 ### 🚀 Running the Pipeline
 
