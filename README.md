@@ -11,6 +11,7 @@
     - [Step 2: Parse XML to Parquet](#step-2-parse-xml-to-parquet)
     - [Step 3: Transform and Clean Data](#step-3-transform-and-clean-data)
     - [Execution Summary](#execution-summary)
+  - [📚 Acknowledgements](#-acknowledgements)
 
 
 ## Wikipedia Graph Analysis Project
@@ -61,38 +62,6 @@ project/
 └── README.md           # This file
 ```
 
-Tentative idea:
-```
-project/
-├── data/
-│   ├── 00_raw/          # (Optional) Raw Wikipedia dump
-│   ├── 10_parsed/       # Title + raw Wikitext (Parquet)
-│   ├── 20_clean/        # Cleaned text + links (Parquet)
-│   ├── 30_embeddings/   # BERT embeddings (NumPy/HDF5)
-│   └── 40_graph/        # Graph data (NetworkX/CSV)
-│
-├── models/              # Saved ML models (optional)
-│
-├── src/
-│   ├── 00_ingest.py     # Download Wikipedia dumps
-│   ├── 10_parse.py      # Parse XML → Parquet
-│   ├── 20_transform.py  # Clean text & extract links
-│   ├── 30_embed.py      # Generate BERT embeddings
-│   ├── 40_cluster.py    # Clustering (K-Means, GNN, etc.)
-│   ├── 50_graph.py      # Build & analyze the graph
-│   └── 60_streamlit.py  # Streamlit dashboard
-│
-├── reports/             # Generated reports (PDF, plots, etc.)
-│   ├── figures/         # Visualizations
-│   └── final_report.md  # Auto-generated report
-│
-├── app/                 # Streamlit app files
-│   ├── main.py          # Streamlit entry point
-│   └── assets/          # CSS/JS (if needed)
-│
-└── README.md            # Project documentation
-```
-
 ### 🚀 Running the Pipeline
 
 The data processing pipeline consists of three main stages. Each stage writes its output to the data/ directory and is idempotent, meaning if the target file already exists, rerunning the script will verify the timestamp and exit without reprocessing.
@@ -141,6 +110,11 @@ python src/10_parse.py
 # 3. Clean markup and extract outgoing links
 python src/20_transform.py
 ```
+
+
+### 📚 Acknowledgements
+
+This project uses the <code>wikitextparser</code> library to parse Wikitext into structured content.
 
 Documentation up to date
 
