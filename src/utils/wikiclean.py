@@ -35,7 +35,6 @@ def clean_wiki_text(text):
     clean = ' '.join(clean.split())
     return clean
 
-
 def parallel_clean_wiki_text(series, chunk_size=15000, workers=10):
     results = []
     # Iterate over chunks with a tqdm progress bar
