@@ -18,7 +18,7 @@ def main():
     tqdm.pandas()
 
     IN_PARQUET = pathlib.Path("data/10_parsed/articles.parquet")
-    OUT_PARQUET = pathlib.Path("data/20_clean/articles.parquet")
+    OUT_PARQUET = pathlib.Path("data/20_transformed/articles.parquet")
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_parquet(IN_PARQUET)
