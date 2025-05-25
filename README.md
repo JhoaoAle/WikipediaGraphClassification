@@ -52,8 +52,9 @@ project/
 ├── data/
 │   ├── 00_raw/             # (Optional) Compressed Wikipedia dump(s)
 │   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
-│   ├── 20_clean/           # Stores clean_body + destination articles (Parquet format)
-│   ├── 30_embeddings/      # Adds embeddings to articles (Parquet format)   
+│   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
+│   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)   
+    ├── 40_preprocesed/     # Preprocesses the dataset with embeddings and return a clustering-ready dataset (Parquet format)   
 │   ├── 40_clusters/        # Store clustering results (e.g., labels, centroids)
 │   └── 50_evaluation/      # Store evaluation metrics/results
 ├── src/
@@ -61,10 +62,11 @@ project/
 │   ├── 10_parse.py         # Script to parse XML to Parquet
 │   ├── 20_transform.py     # Script to clean markup and extract links
 │   ├── 30_embed.py         # Script to generate embeddings vector of articles
-│   ├── 40_cluster.py       # Scripts for clustering models
-│   ├── 50_evaluate.py      # Scripts for evaluation of clustering
-│   ├── 60_dashboard.py     # Streamlit dashboard app
-│   ├── 70_report.py        # Script to generate PDF report
+│   ├── 40_preprocess.py    # Script to clean a dataset with embeddings
+│   ├── 50_cluster.py       # Scripts for clustering models
+│   ├── 60_evaluate.py      # Scripts for evaluation of clustering
+│   ├── 70_dashboard.py     # Streamlit dashboard app
+│   ├── 80_report.py        # Script to generate PDF report
 │   └── utils/
 │       ├── stream_bz2.py   # Utility for streaming bz2 compressed files
 │       └── wikiclean.py    # Utility functions for cleaning Wikitext and columns
