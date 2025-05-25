@@ -7,10 +7,11 @@
     - [2. Install Dependencies](#2-install-dependencies)
   - [🗂️ Project Structure](#️-project-structure)
   - [🚀 Running the Pipeline](#-running-the-pipeline)
-    - [Step 0: Ingest Data](#step-0-ingest-data)
+    - [Step 0: Ingest Data (Optional)](#step-0-ingest-data-optional)
     - [Step 1: Parse XML to Parquet](#step-1-parse-xml-to-parquet)
     - [Step 2: Transform and Clean Data](#step-2-transform-and-clean-data)
     - [Step 3: Generate embeddings vector](#step-3-generate-embeddings-vector)
+    - [Step 4:](#step-4)
     - [Execution Summary](#execution-summary)
   - [📚 Acknowledgements](#-acknowledgements)
 
@@ -54,7 +55,7 @@ project/
 │   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
 │   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
 │   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)   
-    ├── 40_preprocesed/     # Preprocesses the dataset with embeddings and return a clustering-ready dataset (Parquet format)   
+│   ├── 40_preprocesed/     # Preprocesses the dataset with embeddings and return a clustering-ready dataset (Parquet format)   
 │   ├── 40_clusters/        # Store clustering results (e.g., labels, centroids)
 │   └── 50_evaluation/      # Store evaluation metrics/results
 ├── src/
@@ -75,9 +76,9 @@ project/
 
 ### 🚀 Running the Pipeline
 
-The data processing pipeline consists of three main stages. Each stage writes its output to the data/ directory and is idempotent, meaning if the target file already exists, rerunning the script will verify the timestamp and exit without reprocessing.
+The data processing pipeline consists of four main stages. Each stage writes its output to the data/ directory and is idempotent, meaning if the target file already exists, rerunning the script will verify the timestamp and exit without reprocessing.
 
-#### Step 0: Ingest Data
+#### Step 0: Ingest Data (Optional)
 
 Download the latest Simple English Wikipedia dump (approximately 60 MB). This step only needs to be run once, or you can skip it if you plan to parse from a URL directly in the next step.
 
@@ -85,7 +86,7 @@ Download the latest Simple English Wikipedia dump (approximately 60 MB). This st
 python src/00_ingest.py
 ```
 
-Output: Potentially stores downloaded dump in <code>data/00_raw/</code> 
+**Output:** Potentially stores downloaded dump in <code>data/00_raw/</code> 
 
 #### Step 1: Parse XML to Parquet
 
@@ -95,7 +96,7 @@ Parse the downloaded XML dump (or directly from a URL) into a Parquet file conta
 python src/10_parse.py
 ```
 
-Output: <code>data/10_parsed/articles.parquet</code>
+**Output:** <code>data/10_parsed/articles.parquet</code>
 
 #### Step 2: Transform and Clean Data
 
@@ -105,15 +106,29 @@ Clean the Wikitext markup from the parsed data and extract outgoing links from e
 python src/20_transform.py
 ```
 
-Output: <code>data/20_clean/articles.parquet</code>
+**Output:** <code>data/20_clean/articles.parquet</code>
+
+> At this point, the dataset contains the title of the article, the cleaned content, the articles to which it links, the amount of sections and the categories to which it belongs. The dataset weighs around 240 MB
 
 #### Step 3: Generate embeddings vector
 
-Generate a column of embedding vectors for the Wikitext markup from the cleaned data and export the result into a .parquet.
+Generate a set of columns from the embedding vectors for the Wikitext markup from the transformed data and export the result into a .parquet. 
+
+In this stage, the text column <code>cleaned_article_body</code> is tokenized. After this, the embedding associated values are generated accordingly, resulting in the addition of 768 columns associated with the dimension of the embedding vector for each text.
+
+The resulting DataFrame is exported into a .parquet file
+
 
 ``` python
 python src/30_embed.py
 ```
+
+**Output:** <code>data/30_embedded/articles.parquet</code>
+
+> At this point, do note this dataset is considered ready for cleaning. This raw dataset weighs around 1 GB
+
+#### Step 4:
+
 
 #### Execution Summary
 
@@ -129,8 +144,8 @@ python src/10_parse.py
 # 3. Clean markup and extract outgoing links
 python src/20_transform.py
 
-# 4. Generate embbedings vector
-# python src/30_embed.py 
+# 4. Generate embbeding vector
+python src/30_embed.py 
 ```
 
 
