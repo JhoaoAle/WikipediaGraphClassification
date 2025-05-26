@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import pathlib
 import plotly.express as px
 from collections import Counter
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
 
 def main():
     st.title("🔍 Exploratory Data Analysis")
@@ -22,7 +26,7 @@ IN_PARQUET = pathlib.Path("data/30_embedded/articles.parquet")
 df = pd.read_parquet(IN_PARQUET)
 
 st.title("Exploratory Data Analysis")
-tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Conclusions"])
+tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Reducing Dimensionality"])
 
 with tab1:
     st.header("Understanding the Problem")
@@ -75,7 +79,7 @@ with tab2:
 
         # Create DataFrame
         pie_df = pd.DataFrame({
-            'Status': ['Has Links', 'No Links'],
+            'Status': ['Has Assigned Category', 'No Assigned Category'],
             'Count': [has_category, no_category]
         })
 
@@ -84,7 +88,7 @@ with tab2:
             pie_df,
             names='Status',
             values='Count',
-            title='Linked Article Titles Distribution',
+            title='Availability of Category Distribution',
             hole=0.4,  # donut-style, optional
         )
 
@@ -170,5 +174,33 @@ with tab2:
     st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
-    st.header("Future Work")
+    st.header("Reducing Dimensionality")
+    st.subheader("PCA Visualization of Article Embeddings")
+
+    # Step 1: Select embedding columns
+    embedding_cols = [col for col in df.columns if col.startswith('emb_')]
+    X = df[embedding_cols].values
+
+    # Step 2: Apply PCA
+    pca = PCA()
+    X_pca = pca.fit_transform(X)
+
+    # Optional: Add PCA columns back to dataframe
+    for i in range(X_pca.shape[1]):
+        df[f'pca_{i}'] = X_pca[:, i]
+
+    # Step 3: Visualize explained variance
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(np.cumsum(pca.explained_variance_ratio_), marker='o')
+    ax.set_xlabel('Number of PCA Components')
+    ax.set_ylabel('Cumulative Explained Variance')
+    ax.set_title('Explained Variance by PCA Components')
+    ax.grid(True)
+
+    ax.set_facecolor((0,0,0,0))
+
+    # Display the chart
+    st.pyplot(fig)
+
+
     st.write("Placeholders for future sections.")
