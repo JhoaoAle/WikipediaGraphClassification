@@ -89,7 +89,7 @@ python src/00_ingest.py
 
 #### Step 1: Parse XML to Parquet
 
-Parse the downloaded XML dump (or directly from a URL) into a Parquet file containing article titles and raw Wikitext. This stage produces a file of approximately 230 MB with around 140,000 pages.
+Parse the downloaded XML dump (or directly from a URL) into a Parquet file containing article titles and raw Wikitext. This stage produces a file of approximately 230 MB with around 375000 pages.
 
 ``` python
 python src/10_parse.py
