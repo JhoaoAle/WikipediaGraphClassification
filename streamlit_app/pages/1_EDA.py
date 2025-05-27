@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pathlib
 import plotly.express as px
+import plotly.graph_objects as go
 from collections import Counter
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -37,9 +38,7 @@ with tab1:
     This project tackles the significant data engineering challenge of transforming the vast, raw, and complex data of Wikipedia into a clean and structured dataset suitable for advanced analysis.
     """)
 
-    st.markdown("### More specifically, it addresses the following sub-problems:")
-
-    st.markdown("""
+    st.markdown(""" ### More specifically, it addresses the following sub-problems:
     - **Accessibility and Usability**  
     Raw Wikipedia dumps are difficult to work with from the start for directly for graph analysis or machine learning. This project creates a more accessible dataset stored in .parquet format, more suited for large data storage than a csv, specially for a case where the data columns contain special characters such as "," and ";".
 
@@ -150,27 +149,36 @@ with tab2:
     category_df = pd.DataFrame(category_counts.items(), columns=['Category', 'Count'])
     top_categories = category_df.sort_values(by='Count', ascending=False).head(50)
 
-    # Plot using Plotly with log scale
+    # Add log-transformed column
+    top_categories['LogCount'] = np.log10(top_categories['Count'])
+
+    # Plot using log-transformed values
     fig = px.bar(
         top_categories,
         x='Category',
-        y='Count',
-        title='Top 15 Most Frequent Categories (Log Scale)',
-        color='Count',
-        color_continuous_scale='Blues'
+        y='LogCount',
+        title='Top 15 Most Frequent Categories (Logarithmic Scale)',
+        color='LogCount',
+        color_continuous_scale='Blues',
+        labels={'LogCount': 'log₁₀(Count)'}
     )
 
-    # Apply log scale and styling
+    # Optional: Improve layout
     fig.update_layout(
-        yaxis_type='log',
+        yaxis_title='log₁₀(Number of Articles)',
+        xaxis_title='Category',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        xaxis_title='Category',
-        yaxis_title='Log(Number of Articles)',
-        showlegend=False
+        xaxis_tickangle=45
     )
 
-    # Display the chart
+    # Optional: Show both raw and log count on hover
+    fig.update_traces(
+        hovertemplate='<b>%{x}</b><br>log₁₀(Count): %{y:.2f}<br>Raw Count: %{customdata}',
+        customdata=top_categories[['Count']].values
+    )
+
+    # Show chart
     st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
@@ -180,27 +188,36 @@ with tab3:
     # Step 1: Select embedding columns
     embedding_cols = [col for col in df.columns if col.startswith('emb_')]
     X = df[embedding_cols].values
+    df.drop(columns=embedding_cols + ['cleaned_article_body'], inplace=True)
 
     # Step 2: Apply PCA
     pca = PCA()
     X_pca = pca.fit_transform(X)
 
-    # Optional: Add PCA columns back to dataframe
-    for i in range(X_pca.shape[1]):
-        df[f'pca_{i}'] = X_pca[:, i]
+    # Cumulative variance
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+    components = list(range(1, len(cumulative_variance) + 1))
 
-    # Step 3: Visualize explained variance
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(np.cumsum(pca.explained_variance_ratio_), marker='o')
-    ax.set_xlabel('Number of PCA Components')
-    ax.set_ylabel('Cumulative Explained Variance')
-    ax.set_title('Explained Variance by PCA Components')
-    ax.grid(True)
+    # Create plotly figure
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=components,
+        y=cumulative_variance,
+        mode='lines+markers',
+        name='Cumulative Explained Variance',
+        line=dict(color='royalblue'),
+        marker=dict(size=6)
+    ))
 
-    ax.set_facecolor((0,0,0,0))
+    fig.update_layout(
+        title='Explained Variance by PCA Components',
+        xaxis_title='Number of PCA Components',
+        yaxis_title='Cumulative Explained Variance',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(gridcolor='lightgray'),
+        yaxis=dict(gridcolor='lightgray'),
+        height=500
+    )
 
-    # Display the chart
-    st.pyplot(fig)
-
-
-    st.write("Placeholders for future sections.")
+    st.write("Placeholder for explanatory text")

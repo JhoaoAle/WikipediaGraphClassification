@@ -50,8 +50,6 @@ def preprocess_texts(texts: List[str], tokenizer: BertTokenizer) -> List[Dict]:
 
 
 def generate_embeddings(batch: List[Dict], tokenizer: BertTokenizer, model: BertModel) -> np.ndarray:
-    import torch
-
     model.eval()  # Ensure model is in eval mode
 
     with torch.no_grad():
