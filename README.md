@@ -56,6 +56,7 @@ project/
 │   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
 │   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
 │   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)
+│   ├── 40_preprocessed     # Generates clustering-ready dataset (Parquet format)
 ├── src/
 │   ├── 00_ingest.py        # Script to download Wikipedia dumps
 │   ├── 10_parse.py         # Script to parse XML to Parquet
@@ -78,7 +79,7 @@ The data processing pipeline consists of four main stages. Each stage writes its
 
 #### Step 0: Ingest Data (Optional)
 
-Download the latest Simple English Wikipedia dump (approximately 60 MB). This step only needs to be run once, or you can skip it if you plan to parse from a URL directly in the next step.
+Download the latest Simple English Wikipedia dump (approximately 200 MB). This step only needs to be run once, or you can skip it if you plan to parse from a URL directly in the next step.
 
 ``` python
 python src/00_ingest.py

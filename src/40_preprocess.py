@@ -5,9 +5,11 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import string
-import nltk
 from nltk.corpus import stopwords
 import re
+from tqdm import tqdm
+tqdm.pandas()
+
 
 # Only needed the first time
 #nltk.download('punkt')
@@ -77,7 +79,7 @@ pca_df = pd.DataFrame(X_pca, columns=[f'pca_{i}' for i in range(X_pca.shape[1])]
 df = pd.concat([df, pca_df], axis=1)
 
 # Apply to your DataFrame
-df_text_features = df['cleaned_article_body'].apply(extract_text_features)
+df_text_features = df['cleaned_article_body'].progress_apply(extract_text_features)
 
 # Concatenate new features and drop original text column
 df = pd.concat([df, df_text_features], axis=1)
@@ -87,3 +89,5 @@ df.drop(columns=embedding_cols + ['cleaned_article_body'], inplace=True)
 
 # Save preprocessed dataframe
 df.to_parquet(OUT_PARQUET, index=False)
+
+print("✓ wrote", OUT_PARQUET, len(df), "rows")
