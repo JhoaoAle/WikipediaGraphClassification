@@ -69,7 +69,16 @@ with tab2:
     st.subheader("Distribution of relevant missing values")
     df['word_count'] = df['cleaned_article_body'].apply(lambda x: len(x.split()))
 
+
+    st.markdown("""
+    First of all, we want to explore the behaviour of the msot relevant missing columns to understand hwo the data behaves on its initial state. 
+    To do so, we will focus in the two most relevant columns in the basic dataset: 
+    - `categories` column, which contains the categories assigned to each article in Simple Wikipedia
+    - `linked_article_titles` column, which contains the titles of articles that can be accessed from the current article through hyperlinks.
+    """)   
+
     col1, col2 = st.columns([2, 1])
+    
 
     with col1:
         # Count rows with and without a category mapped
@@ -139,7 +148,17 @@ with tab2:
         # Show in Streamlit
         st.plotly_chart(fig, use_container_width=True)
 
+    st.markdown("""
+    Observing the above plots, we can see that:
+        - 99% of articles have at least one article to which they link, which is a good sign that the articles are well connected.
+        - 30% of articles have no assigned category, which is a significant portion. This could indicate that the categories are not consistently applied.     
+    """)   
+
     st.subheader("Distribution of Most Popular Categories (Log Scale)")
+
+    st.markdown("""
+    Along the categorized articles, what we want to explore is the distribution of the most popular categories in the dataset; to evaluate if they behave in a balanced manner or if there are categories that are more heavily represented than others.  
+    """)   
 
     # Flatten all categories from lists into one big list
     all_categories = df['categories'].explode()
@@ -181,6 +200,14 @@ with tab2:
     # Show chart
     st.plotly_chart(fig, use_container_width=True)
 
+    st.markdown("""
+    Observing the above plot, we can see that there is a certain bias: The most popular category, 'Living people', has 34886 articles, while the second most popular category, '2020 Deaths', has only 4950 articles. 
+    
+    This indicates that the categories are not evenly distributed, with the most popular article having 7 times more articles than the second most popular category. This could lead to an imbalance in the dataset when we realize a neighboring analysis.
+                
+    Another important consideration is that the categories are not mutually exclusive, meaning that an article can belong to multiple categories; this means that having this unequity in the categories distribution could indicate an inherent bias in the dataset, which could affect the results of the analysis.
+    """) 
+ 
 with tab3:
     st.header("Reducing Dimensionality")
     st.subheader("PCA Visualization of Article Embeddings")
@@ -220,4 +247,9 @@ with tab3:
         height=500
     )
 
-    st.write("Placeholder for explanatory text")
+    # Show chart
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("Despite starting with embedding vectors of 768 dimensions, PCA allows us to reduce the dimensionality while retaining a significant amount of variance. The cumulative explained variance plot shows how many components are needed to capture most of the variance in the data." \
+    "" \
+    "With 200 dimensions, we can retain over 90% of the variance, which is a good balance between dimensionality reduction and information preservation.")
