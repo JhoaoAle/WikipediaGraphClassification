@@ -10,6 +10,25 @@ from collections import Counter
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import os
+import requests
+
+
+IN_PARQUET = pathlib.Path("../data/30_embedded/articles.parquet")
+
+@st.cache_data
+def load_data():
+    url = "https://huggingface.co/datasets/Qu4ntz/articles_simple_wiki/resolve/main/articles.parquet"
+    local_path = IN_PARQUET
+
+    if not os.path.exists(local_path):
+        with st.spinner("Downloading dataset..."):
+            response = requests.get(url, stream=True)
+            with open(local_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+    return pd.read_parquet(local_path)
 
 
 def main():
@@ -21,7 +40,7 @@ st.set_page_config(
     layout="centered"
 )
 
-IN_PARQUET = pathlib.Path("data/30_embedded/articles.parquet")
+
 
 # Load your dataframe here
 df = pd.read_parquet(IN_PARQUET)
