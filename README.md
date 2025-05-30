@@ -11,7 +11,7 @@
     - [Step 1: Parse XML to Parquet](#step-1-parse-xml-to-parquet)
     - [Step 2: Transform and Clean Data](#step-2-transform-and-clean-data)
     - [Step 3: Generate embeddings vector](#step-3-generate-embeddings-vector)
-    - [Step 4:](#step-4)
+    - [Step 4: Preprocess the generated dataset](#step-4-preprocess-the-generated-dataset)
     - [Execution Summary](#execution-summary)
     - [Streamlit Dashboard execution](#streamlit-dashboard-execution)
   - [📚 Acknowledgements](#-acknowledgements)
@@ -56,7 +56,7 @@ project/
 │   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
 │   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
 │   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)
-│   ├── 40_preprocessed     # Generates clustering-ready dataset (Parquet format)
+│   ├── 40_preprocessed/    # Generates clustering-ready dataset (Parquet format)
 ├── src/
 │   ├── 00_ingest.py        # Script to download Wikipedia dumps
 │   ├── 10_parse.py         # Script to parse XML to Parquet
@@ -65,11 +65,14 @@ project/
 │   ├── 40_preprocess.py    # Script to clean a dataset with embeddings
 │   └── utils/
 │       ├── stream_bz2.py   # Utility for streaming bz2 compressed files
-│       └── wikiclean.py    # Utility functions for cleaning Wikitext and columns
+│       ├── wikiclean.py    # Utility functions for cleaning Wikitext and columns
+│       └── streamlit_sampler.py # Used to generate the sample files required for Streamlit Dashboard
 ├── streamlit_app/
 │   ├── home.py             # Main page for running streamlit dashboard
-│   └── pages/              
-│       └── 1_EDA.py        # First dashboard section. Works with dataset as-is; before cleaning
+│   ├── pages/              
+│   │    └── 1_EDA.py        # First dashboard section. Works with dataset as-is; before cleaning
+│   └── data_sample/
+│        └── articles_sample.parquet # Dataset sample used to run the Streamlit Dashboard
 └── README.md           # This file
 ```
 
@@ -126,8 +129,37 @@ python src/30_embed.py
 
 > At this point, do note this dataset is considered ready for cleaning. This raw dataset weighs around 1 GB
 
-#### Step 4:
+#### Step 4: Preprocess the generated dataset
 
+Generate a set of columns from the embedding columns which represent the reduced dimensionality of the dataset through PCA. 
+
+In this stage, the text column `cleaned_article_body` is dropped. After this, the dimensionality associated to the embedding process is performed, and we obtain text related metadata from the now removed `cleaned_article_body`. These columns are:
+
+- **char_count**: Total number of characters in the text (including spaces and punctuation).
+
+- **word_count**: Total number of words in the text.
+
+- **sentence_count**: Total number of sentences, split using punctuation marks like `.`, `!`, and `?`.
+
+- **avg_word_length**: Average length of the words in the text.
+
+- **avg_sentence_length**: Average number of words per sentence.
+
+- **uppercase_word_count**: Number of words that are fully uppercase.
+
+- **stopword_ratio**: Proportion of words that are stopwords (based on a predefined stopword list).
+
+- **punctuation_ratio**: Proportion of characters that are punctuation marks.
+
+``` python
+python src/40_preprocess.py
+```
+
+**Output:** `data/40_preprocessed/articles.parquet`
+
+The resulting DataFrame is exported into a .parquet file
+
+> At this point, do note this dataset is considered ready for clustering and network analysis. This raw dataset weighs around 450 MB
 
 #### Execution Summary
 
@@ -145,6 +177,9 @@ python src/20_transform.py
 
 # 4. Generate embbeding vector
 python src/30_embed.py 
+
+# 5. Generate clen dataset from clustering and network analysis
+python src/40_preprocess.py
 ```
 
 #### Streamlit Dashboard execution
