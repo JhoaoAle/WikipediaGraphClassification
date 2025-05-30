@@ -20,7 +20,13 @@ from pathlib import Path
 
 @st.cache_data
 def load_data():
-    local_path = Path("../data_sample/articles_sample.parquet")
+    # Build an absolute path relative to this file
+    current_dir = Path(__file__).parent  # This is streamlit_app/pages/
+    local_path = (current_dir / "../data_sample/articles_sample.parquet").resolve()
+
+    if not local_path.exists():
+        st.error(f"File not found: {local_path}")
+        st.stop()
 
     return pd.read_parquet(local_path)
 
