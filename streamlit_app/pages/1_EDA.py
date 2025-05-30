@@ -19,10 +19,10 @@ from pathlib import Path
 
 
 @st.cache_data
-def load_data():
-    # Build an absolute path relative to this file
+def load_data(relative_path: str):
+    # Resolve the relative path based on the current file's location
     current_dir = Path(__file__).parent  # This is streamlit_app/pages/
-    local_path = (current_dir / "../data_sample/articles_sample.parquet").resolve()
+    local_path = (current_dir / relative_path).resolve()
 
     if not local_path.exists():
         st.error(f"File not found: {local_path}")
@@ -31,19 +31,9 @@ def load_data():
     return pd.read_parquet(local_path)
 
 
-def main():
-    st.title("🔍 Exploratory Data Analysis")
-
-st.set_page_config(
-    page_title="Exploratory Data Analysis",
-    page_icon="🔍",
-    layout="centered"
-)
-
-
 
 # Load your dataframe here
-df = load_data()
+df = load_data("../data_sample/articles_30_embedded_sample_1_EDA.parquet")
 
 st.title("Exploratory Data Analysis")
 tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Reducing Dimensionality"])
@@ -226,10 +216,47 @@ with tab2:
                 
     Another important consideration is that the categories are not mutually exclusive, meaning that an article can belong to multiple categories; this means that having this unequity in the categories distribution could indicate an inherent bias in the dataset, which could affect the results of the analysis.
     """) 
+
+    
+    # Load your dataframe
+    df2 = load_data("../data_sample/articles_40_preprocessed_sample_1_EDA.parquet")
+
+    # Columns to visualize
+    columns = [
+        'char_count',
+        'word_count',
+        'sentence_count',
+        'avg_word_length',
+        'avg_sentence_length',
+        'uppercase_word_count',
+        'stopword_ratio',
+        'punctuation_ratio'
+    ]
+
+    # Title and instructions
+    st.title("📊 Distribution of Text Features")
+    st.markdown("The following histograms show the distribution of selected text features (log-transformed for better readability).")
+
+    # Log-transform the columns
+    df_log = df2[columns].apply(lambda x: np.log1p(x))
+    df_log["Feature"] = df_log.index  # Optional, in case you want to melt later
+
+    # Plot each histogram with Plotly
+    for col in columns:
+        fig = px.histogram(df_log, x=col, nbins=30, title=col, color_discrete_sequence=["skyblue"])
+        fig.update_layout(
+            xaxis_title="log(1 + x)",
+            yaxis_title="Frequency",
+            bargap=0.1,
+            margin=dict(l=40, r=20, t=40, b=40)
+        )
+        st.plotly_chart(fig, use_container_width=True)
  
 with tab3:
     st.header("Reducing Dimensionality")
     st.subheader("PCA Visualization of Article Embeddings")
+
+    st.write("Despite starting with embedding vectors of 768 dimensions, PCA allows us to reduce the dimensionality while retaining a significant amount of variance.")
 
     # Step 1: Select embedding columns
     embedding_cols = [col for col in df.columns if col.startswith('emb_')]
@@ -268,7 +295,5 @@ with tab3:
 
     # Show chart
     st.plotly_chart(fig, use_container_width=True)
-
-    st.write("Despite starting with embedding vectors of 768 dimensions, PCA allows us to reduce the dimensionality while retaining a significant amount of variance. The cumulative explained variance plot shows how many components are needed to capture most of the variance in the data." \
-    "" \
-    "With 200 dimensions, we can retain over 90% of the variance, which is a good balance between dimensionality reduction and information preservation.")
+    st.write("The plot above shows the cumulative explained variance as we increase the number of PCA components. Each point represents the total variance explained by the first n components.")
+    st.write("As we can see, the first 200 components already explain over 90% of the variance in the data, which is a good balance between dimensionality reduction and information preservation.")

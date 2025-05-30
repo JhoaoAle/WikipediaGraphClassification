@@ -8,6 +8,7 @@ import string
 from nltk.corpus import stopwords
 import re
 from tqdm import tqdm
+from functools import partial
 tqdm.pandas()
 
 
@@ -15,10 +16,7 @@ tqdm.pandas()
 #nltk.download('punkt')
 #nltk.download('stopwords')
 
-
-
-
-def extract_text_features(text):
+def extract_text_features(text, stop_words):
     if not isinstance(text, str) or not text.strip():
         return pd.Series([0, 0, 0, 0, 0, 0, 0, 0], 
                          index=['char_count', 'word_count', 'sentence_count', 'avg_word_length',
@@ -82,8 +80,10 @@ def main():
     pca_df = pd.DataFrame(X_pca, columns=[f'pca_{i}' for i in range(X_pca.shape[1])], index=df.index)
     df = pd.concat([df, pca_df], axis=1)
 
-    # Apply to your DataFrame
-    df_text_features = df['cleaned_article_body'].progress_apply(extract_text_features)
+    # Apply to DataFrame
+    feature_extractor = partial(extract_text_features, stop_words=stop_words)
+
+    df_text_features = df['cleaned_article_body'].progress_apply(feature_extractor)
 
     # Concatenate new features and drop original text column
     df = pd.concat([df, df_text_features], axis=1)
