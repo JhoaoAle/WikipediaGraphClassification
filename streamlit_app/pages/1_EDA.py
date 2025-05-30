@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import os
 import requests
-import pathlib
+from pathlib import Path
 
 # This breaks the code when deploying to streamlit cloud, so we use a relative path
 # IN_PARQUET = pathlib.Path("../data/30_embedded/articles.parquet")
