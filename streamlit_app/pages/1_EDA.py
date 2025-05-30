@@ -20,7 +20,7 @@ from pathlib import Path
 
 @st.cache_data
 def load_data():
-    local_path = Path("data_sample/articles_sample.parquet")
+    local_path = Path("../data_sample/articles_sample.parquet")
 
     return pd.read_parquet(local_path)
 
