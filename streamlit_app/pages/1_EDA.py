@@ -20,7 +20,7 @@ from pathlib import Path
 @st.cache_data
 def load_data():
     url = "https://huggingface.co/datasets/Qu4ntz/articles_simple_wiki/resolve/main/articles.parquet"
-    local_path = Path("articles.parquet")  # ✅ use safe path
+    local_path = Path("articles.parquet")  # Use safe path
 
     if not local_path.exists():
         with st.spinner("Downloading dataset..."):
