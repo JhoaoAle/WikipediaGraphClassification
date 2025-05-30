@@ -43,7 +43,7 @@ st.set_page_config(
 
 
 # Load your dataframe here
-df = pd.read_parquet(IN_PARQUET)
+df = load_data()
 
 st.title("Exploratory Data Analysis")
 tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Reducing Dimensionality"])
