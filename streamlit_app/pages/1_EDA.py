@@ -15,22 +15,15 @@ import requests
 from pathlib import Path
 
 # This breaks the code when deploying to streamlit cloud, so we use a relative path
-# IN_PARQUET = pathlib.Path("../data/30_embedded/articles.parquet")
+# IN_PARQUET = pathlib.Path("/30_embedded/articles.parquet")
+
 
 @st.cache_data
 def load_data():
-    url = "https://huggingface.co/datasets/Qu4ntz/articles_simple_wiki/resolve/main/articles.parquet"
-    local_path = Path("articles.parquet")  # Use safe path
-
-    if not local_path.exists():
-        with st.spinner("Downloading dataset..."):
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-            with open(local_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+    local_path = Path("data_sample/articles_sample.parquet")
 
     return pd.read_parquet(local_path)
+
 
 def main():
     st.title("🔍 Exploratory Data Analysis")
