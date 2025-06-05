@@ -56,23 +56,28 @@ project/
 │   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
 │   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
 │   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)
-│   ├── 40_preprocessed/    # Generates clustering-ready dataset (Parquet format)
+│   └── 40_preprocessed/    # Generates clustering-ready dataset (Parquet format)
+│
 ├── src/
 │   ├── 00_ingest.py        # Script to download Wikipedia dumps
 │   ├── 10_parse.py         # Script to parse XML to Parquet
 │   ├── 20_transform.py     # Script to clean markup and extract links
 │   ├── 30_embed.py         # Script to generate embeddings vector of articles
 │   ├── 40_preprocess.py    # Script to clean a dataset with embeddings
+│   ├── 50_kmeans.py        # Applies KMeans clustering to preprocessed data
+│   ├── 51_dbscan.py        # Applies DBSCAN clustering to preprocessed data
 │   └── utils/
 │       ├── stream_bz2.py   # Utility for streaming bz2 compressed files
-│       ├── wikiclean.py    # Utility functions for cleaning Wikitext and columns
-│       └── streamlit_sampler.py # Used to generate the sample files required for Streamlit Dashboard
+│       └── wikiclean.py    # Utility functions for cleaning Wikitext and columns
+│
 ├── streamlit_app/
 │   ├── home.py             # Main page for running streamlit dashboard
 │   ├── pages/              
 │   │    └── 1_EDA.py        # First dashboard section. Works with dataset as-is; before cleaning
-│   └── data_sample/
-│        └── articles_sample.parquet # Dataset sample used to run the Streamlit Dashboard
+│   ├── data_sample/
+│   │    └── articles_step_name_sample.parquet (*) # Dataset samples used to run the Streamlit Dashboard
+│   └── sampler.py # Used to generate the sample files required for Streamlit Dashboard
+│
 └── README.md           # This file
 ```
 
