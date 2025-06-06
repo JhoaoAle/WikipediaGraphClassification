@@ -1,113 +1,120 @@
 import torch
 import pandas as pd
 import numpy as np
-from transformers import BertTokenizer, BertModel
+from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
-from concurrent.futures import ThreadPoolExecutor
 import pathlib
-from typing import List, Dict
+import math
+from torch.cuda.amp import autocast
 
+# Configuration
 IN_PARQUET = pathlib.Path("data/20_transformed/articles.parquet")
 OUT_PARQUET = pathlib.Path("data/30_embedded/articles.parquet")
-
-# Config
-BATCH_SIZE = 256
-MAX_LENGTH = 512
+MODEL_NAME = "all-mpnet-base-v2"
+BASE_BATCH_SIZE = 256  # Starting batch size (will be adjusted dynamically)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_NAME = "bert-base-uncased"
 
-def initialize_bert() -> tuple:
-    """Initialize BERT model and tokenizer"""
-    tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
-    model = BertModel.from_pretrained(MODEL_NAME).to(DEVICE)
-    if DEVICE.type == 'cuda':
-        model = model.half()  # Convert model to FP16
-    return tokenizer, model
+def initialize_model() -> SentenceTransformer:
+    """Initialize SentenceTransformer model with performance optimizations"""
+    torch.backends.cuda.matmul.allow_tf32 = True  # Enable TensorFloat-32
+    torch.backends.cudnn.benchmark = True  # Enable cuDNN auto-tuner
+    
+    model = SentenceTransformer(MODEL_NAME)
+    model = model.to(DEVICE)
+    model.max_seq_length = 384  # Optimal for most Sentence-BERT models
+    
+    print(f"✓ Loaded model '{MODEL_NAME}' on device: {DEVICE}")
+    print(f"✓ Model max sequence length: {model.max_seq_length}")
+    print(f"✓ Model embedding dimension: {model.get_sentence_embedding_dimension()}")
+    return model
 
-def preprocess_texts(texts: List[str], tokenizer: BertTokenizer) -> List[Dict]:
-    """Parallel tokenization of texts"""
-    def tokenize(text: str):
-        try:
-            return tokenizer(
-                text,
-                truncation=True,
-                max_length=MAX_LENGTH,
-                return_attention_mask=True,
-                padding='max_length'
+def get_optimal_batch_size(texts: list, model: SentenceTransformer) -> int:
+    """Dynamically adjust batch size based on text lengths"""
+    avg_len = np.mean([len(t.split()) for t in texts])
+    max_len = model.max_seq_length
+    
+    if avg_len > 0.6 * max_len:
+        return max(BASE_BATCH_SIZE // 2, 32)
+    elif avg_len > 0.3 * max_len:
+        return BASE_BATCH_SIZE
+    return min(BASE_BATCH_SIZE * 2, 512)
+
+def generate_embeddings(
+    model: SentenceTransformer,
+    texts: list,
+    batch_size: int,
+    show_progress: bool = True
+) -> np.ndarray:
+    """Generate embeddings safely with GPU utilization"""
+    emb_dim = model.get_sentence_embedding_dimension()
+    embeddings = np.zeros((len(texts), emb_dim), dtype=np.float32)
+    
+    # Sort texts by length for more efficient batching
+    text_lengths = [len(t.split()) for t in texts]
+    sorted_indices = np.argsort(text_lengths)
+    sorted_texts = [texts[i] for i in sorted_indices]
+    
+    # Warm-up GPU with a small batch
+    if torch.cuda.is_available():
+        warmup_text = ["warmup"] * min(8, len(texts))
+        _ = model.encode(warmup_text, device=DEVICE)
+    
+    # Process batches serially (safe, no OOM)
+    for i in tqdm(
+        range(0, len(sorted_texts), batch_size),
+        desc=f"Generating embeddings (batch_size={batch_size})",
+        disable=not show_progress
+    ):
+        batch = sorted_texts[i:i + batch_size]
+        with torch.no_grad(), torch.amp.autocast(device_type='cuda'): # Use AMP for better perf
+            batch_embeddings = model.encode(
+                batch,
+                batch_size=batch_size,
+                device=DEVICE,
+                convert_to_tensor=True,
+                normalize_embeddings=True,
+                show_progress_bar=False
             )
-        except Exception as e:
-            print(f"Error tokenizing text: {e}")
-            return None
+        start_idx = i
+        end_idx = start_idx + len(batch_embeddings)
+        embeddings[start_idx:end_idx] = batch_embeddings.cpu().numpy()
+        
+        # Optional: clear memory between batches
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     
-    with ThreadPoolExecutor() as executor:
-        results = list(tqdm(
-            executor.map(tokenize, texts),
-            desc="Tokenizing",
-            total=len(texts)
-        ))
-    
-    return [res for res in results if res is not None]
-
-
-def generate_embeddings(batch: List[Dict], tokenizer: BertTokenizer, model: BertModel) -> np.ndarray:
-    model.eval()  # Ensure model is in eval mode
-
-    with torch.no_grad():
-        # Use tokenizer batching and pad+convert to tensors directly on the GPU
-        batch = tokenizer.pad(
-            batch,
-            padding='max_length',
-            return_tensors="pt"
-        )
-        batch = {k: v.to(DEVICE, non_blocking=True) for k, v in batch.items()}
-
-        outputs = model(**batch)
-
-        # Float32 pooling for precision
-        token_embeddings = outputs.last_hidden_state.float()
-        mask = batch["attention_mask"].unsqueeze(-1).float()
-        masked_embeddings = token_embeddings * mask
-        pooled = masked_embeddings.sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
-
-        return pooled.cpu().numpy()
-
-
+    # Restore original order
+    original_order_embeddings = np.zeros_like(embeddings)
+    original_order_embeddings[sorted_indices] = embeddings
+    return original_order_embeddings
 
 def main():
-    # Initialize model and tokenizer
-    tokenizer, model = initialize_bert()
+    model = initialize_model()
     
     # Load data
     df = pd.read_parquet(IN_PARQUET)
     texts = df["cleaned_article_body"].astype(str).tolist()
+    print(f"✓ Loaded {len(texts)} texts from {IN_PARQUET}")
     
-    # Step 1: Parallel tokenization
-    tokenized = preprocess_texts(texts, tokenizer)
+    # Determine optimal batch size
+    batch_size = get_optimal_batch_size(texts, model)
+    print(f"✓ Using dynamic batch size: {batch_size}")
     
-    # Step 2: Batch processing
-    embeddings = []
-    for i in tqdm(range(0, len(tokenized), BATCH_SIZE), desc="Generating embeddings"):
-        batch = tokenized[i:i + BATCH_SIZE]
-        try:
-            batch_embeddings = generate_embeddings(batch, tokenizer, model)
-            embeddings.append(batch_embeddings)
-        except Exception as e:
-            print(f"Error processing batch {i//BATCH_SIZE}: {e}")
-            # Add zero vectors for failed batches
-            embeddings.append(np.zeros((len(batch), 768)))
+    # Generate embeddings
+    embeddings = generate_embeddings(model, texts, batch_size)
     
-    # Combine results
-    all_embeddings = np.concatenate(embeddings)
-    # Convert embeddings to separate columns
-    embedding_cols = pd.DataFrame(all_embeddings, columns=[f"emb_{i}" for i in range(all_embeddings.shape[1])])
-    df = pd.concat([df.reset_index(drop=True), embedding_cols], axis=1)
-        
     # Save results
+    embedding_cols = pd.DataFrame(
+        embeddings,
+        columns=[f"emb_{i}" for i in range(embeddings.shape[1])]
+    )
+    df = pd.concat([df.reset_index(drop=True), embedding_cols], axis=1)
+    
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(OUT_PARQUET, index=False)
-    print("✓ wrote", OUT_PARQUET, len(df), "rows")
+    print(f"✓ Saved embeddings to {OUT_PARQUET}")
+    print(f"  - Embedding shape: {embeddings.shape}")
+    print(f"  - Memory usage: {embeddings.nbytes / 1024**2:.2f} MB")
 
 if __name__ == "__main__":
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.benchmark = True
     main()

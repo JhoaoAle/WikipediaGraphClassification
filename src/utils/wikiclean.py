@@ -5,6 +5,9 @@ import wikitextparser as wtp
 import ast
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import string
 
 WIKI_LINK = re.compile(r"\[\[([^\]\|#]+)")
 
@@ -56,3 +59,43 @@ def clean_linked_articles(cell):
         return [a.lower() for a in articles]
     except:
         return []
+    
+def extract_text_features(text, stop_words):
+    if not isinstance(text, str) or not text.strip():
+        return pd.Series([0, 0, 0, 0, 0, 0, 0, 0], 
+                         index=['char_count', 'word_count', 'sentence_count', 'avg_word_length',
+                                'avg_sentence_length', 'uppercase_word_count', 
+                                'stopword_ratio', 'punctuation_ratio'])
+
+    words = text.split()
+    sentences = re.split(r'[.!?]+', text)
+    punctuations = set(string.punctuation)
+
+    char_count = len(text)
+    word_count = len(words)
+    sentence_count = len([s for s in sentences if s.strip()])
+    avg_word_length = np.mean([len(word) for word in words]) if words else 0
+    avg_sentence_length = word_count / sentence_count if sentence_count else 0
+    uppercase_word_count = sum(1 for word in words if word.isupper())
+    stopword_count = sum(1 for word in words if word.lower() in stop_words)
+    punctuation_count = sum(1 for char in text if char in punctuations)
+    
+    return pd.Series([
+        char_count,
+        word_count,
+        sentence_count,
+        avg_word_length,
+        avg_sentence_length,
+        uppercase_word_count,
+        stopword_count / word_count if word_count else 0,
+        punctuation_count / char_count if char_count else 0
+    ], index=[
+        'char_count',
+        'word_count',
+        'sentence_count',
+        'avg_word_length',
+        'avg_sentence_length',
+        'uppercase_word_count',
+        'stopword_ratio',
+        'punctuation_ratio'
+    ])
