@@ -43,8 +43,6 @@ template_vars = {
     "categories_once": int((categories_df['frequency'] == 1).sum()),
     "categories_twice": int((categories_df['frequency'] == 2).sum()),
     "categories_thrice": int((categories_df['frequency'] == 3).sum()),
-    "top_categories_plot_path": "plots/top_categories.png",
-    "cumulative_plot_path": "plots/cumulative_plot.png",
     "histogram_plot_path": "plots/histogram_plot.png",
 }
 

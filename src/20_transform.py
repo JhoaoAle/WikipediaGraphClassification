@@ -42,7 +42,7 @@ def main():
 
     print("\n→ Extracting text features...")
     feature_extractor = partial(extract_text_features, stop_words=stop_words)
-    df_text_features = df['cleaned_article_body'].progress_apply(feature_extractor)
+    df_text_features = df['body'].progress_apply(feature_extractor)
 
     print("\n→ Merging extracted text features...")
     df = pd.concat([df, df_text_features], axis=1)

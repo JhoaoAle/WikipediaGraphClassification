@@ -52,37 +52,39 @@ The project is organized as follows:
 ```
 project/
 ├── data/
-│   ├── 00_raw/             # (Optional) Compressed Wikipedia dump(s)
-│   ├── 10_parsed/          # Stores title + raw Wikitext (Parquet format)
-│   ├── 20_transformed/     # Stores clean_body + destination articles (Parquet format)
-│   ├── 30_embedded/        # Adds embeddings to articles (Parquet format)
-│   └── 40_preprocessed/    # Generates clustering-ready dataset (Parquet format)
+│   ├── 00_raw/                     # (Optional) Compressed Wikipedia dump(s)
+│   ├── 10_parsed/                  # Stores title + raw Wikitext (Parquet format)
+│   ├── 20_transformed/             # Stores clean_body + destination articles (Parquet format)
+│   ├── 30_embedded/                # Adds embeddings to articles (Parquet format)
+│   └── 40_preprocessed/            # Generates clustering and network analysis-ready dataset (Parquet format)
+│       ├── 41_classification/      # Clustering dataset (Prunned rows)      
+│       └── 42_mapping/             # Graph analysis dataset (Articles map)
 │
 ├── src/
-│   ├── 00_ingest.py        # Script to download Wikipedia dumps
-│   ├── 10_parse.py         # Script to parse XML to Parquet
-│   ├── 20_transform.py     # Script to clean markup and extract links
-│   ├── 30_embed.py         # Script to generate embeddings vector of articles
-│   ├── 40_preprocess.py    # Script to clean a dataset with embeddings
-│   ├── 50_kmeans.py        # Applies KMeans clustering to preprocessed data
-│   ├── 51_dbscan.py        # Applies DBSCAN clustering to preprocessed data
+│   ├── 00_ingest.py                # Script to download Wikipedia dumps
+│   ├── 10_parse.py                 # Script to parse XML to Parquet
+│   ├── 20_transform.py             # Script to clean markup and extract links
+│   ├── 30_embed.py                 # Script to generate embeddings vector of articles
+│   ├── 40_preprocess.py            # Script to clean a dataset with embeddings
+│   ├── 50_kmeans.py                # Applies KMeans clustering to preprocessed data
+│   ├── 51_dbscan.py                # Applies DBSCAN clustering to preprocessed data
 │   └── utils/
-│       ├── stream_bz2.py   # Utility for streaming bz2 compressed files
-│       └── wikiclean.py    # Utility functions for cleaning Wikitext and columns
+│       ├── stream_bz2.py           # Utility for streaming bz2 compressed files
+│       └── wikiclean.py            # Utility functions for cleaning Wikitext and columns
 │
 ├── streamlit_app/
-│   ├── home.py             # Main page for running streamlit dashboard
+│   ├── home.py                     # Main page for running streamlit dashboard
 │   ├── pages/              
-│   │    └── 1_EDA.py        # First dashboard section. Works with dataset as-is; before cleaning
+│   │   └── 1_EDA.py                # First dashboard section. Works with dataset as-is; before cleaning
 │   ├── data_sample/
-│   │    └── articles_step_name_sample.parquet (*) # Dataset samples used to run the Streamlit Dashboard
+│   │   └── articles_step_name_sample.parquet (*) # Dataset samples used to run the Streamlit Dashboard
 │   └── sampler.py # Used to generate the sample files required for Streamlit Dashboard
 │
 ├── reports/
-│   ├── templates/            # LaTeX templates (*.tex files, images)
-│   ├── generated/            # Output PDFs or *.tex files
-│   └── generate_report.py    # Script that generates the LaTeX document
-└── README.md           # This file
+│   ├── templates/                  # LaTeX templates (*.tex files, images)
+│   ├── generated/                  # Output PDFs or *.tex files
+│   └── generate_report.py          # Script that generates the LaTeX document
+└── README.md                       # This file
 ```
 
 ### 🚀 Running the Pipeline
@@ -111,38 +113,7 @@ python src/10_parse.py
 
 #### Step 2: Transform and Clean Data
 
-Clean the Wikitext markup from the parsed data and extract outgoing links from each article.
-
-``` python
-python src/20_transform.py
-```
-
-**Output:** `data/20_clean/articles.parquet`
-
-> At this point, the dataset contains the title of the article, the cleaned content, the articles to which it links, the amount of sections and the categories to which it belongs. The dataset weighs around 240 MB
-
-#### Step 3: Generate embeddings vector
-
-Generate a set of columns from the embedding vectors for the Wikitext markup from the transformed data and export the result into a .parquet. 
-
-In this stage, the text column `cleaned_article_body` is tokenized. After this, the embedding associated values are generated accordingly, resulting in the addition of 768 columns associated with the dimension of the embedding vector for each text.
-
-The resulting DataFrame is exported into a .parquet file
-
-
-``` python
-python src/30_embed.py
-```
-
-**Output:** `data/30_embedded/articles.parquet`
-
-> At this point, do note this dataset is considered ready for cleaning. This raw dataset weighs around 1 GB
-
-#### Step 4: Preprocess the generated dataset
-
-Generate a set of columns from the embedding columns which represent the reduced dimensionality of the dataset through PCA. 
-
-In this stage, the text column `cleaned_article_body` is dropped. After this, the dimensionality associated to the embedding process is performed, and we obtain text related metadata from the now removed `cleaned_article_body`. These columns are:
+Clean the Wikitext markup from the parsed data and extract outgoing links from each article. We obtain text related metadata from the `cleaned_article_body` column. These columns are:
 
 - **char_count**: Total number of characters in the text (including spaces and punctuation).
 
@@ -161,14 +132,57 @@ In this stage, the text column `cleaned_article_body` is dropped. After this, th
 - **punctuation_ratio**: Proportion of characters that are punctuation marks.
 
 ``` python
-python src/40_preprocess.py
+python src/20_transform.py
 ```
 
-**Output:** `data/40_preprocessed/articles.parquet`
+**Output:** `data/20_transformed/articles.parquet`
+
+> At this point, the dataset contains the title of the article, the cleaned content, the articles to which it links, the amount of sections and the categories to which it belongs. The dataset weighs around 169 MB
+
+#### Step 3: Generate embeddings vector
+
+Generate a set of columns from the embedding vectors for the Wikitext markup from the transformed data and export the result into a .parquet. 
+
+In this stage, the text column `cleaned_article_body` is tokenized. After this, the embedding associated values are generated accordingly, resulting in the addition of 768 columns associated with the dimension of the embedding vector for each text.
 
 The resulting DataFrame is exported into a .parquet file
 
-> At this point, do note this dataset is considered ready for clustering and network analysis. This raw dataset weighs around 450 MB
+
+``` python
+python src/30_embed.py
+```
+
+**Output:** `data/30_embedded/articles.parquet`
+
+> At this point, do note this dataset is considered ready for cleaning. This raw dataset weighs around 1.64 GB
+
+#### Step 4: Preprocess the generated dataset
+
+In this stage, the text column `cleaned_article_body` is dropped, the column `article_id` is generated to keep consistency across the outputs; and two different datasets are generated:
+
+**Mapping dataset**
+In this dataset, we keep the columns: `article_id`, `title`, and `linked_article_titles`; since this will be used for network analysis; these are the only columns required at this point
+
+**Clustering dataset**
+
+In this dataset 105435 rows are redirects to other articles, which are not important for content-based clustering analysis, therefore, these will be dropped since they don't provide a significative insight for content-based clustering.
+
+A set of columns from the embedding columns which represent the reduced dimensionality of the dataset through PCA and these columns will be included in the dataset whilst the embedding columns are dropped. 
+
+``` python
+python src/40_preprocess.py
+```
+
+**Output:** 
+**One dataset for Mapping** 
+`data/40_preprocessed_mapping/articles.parquet`
+
+**One dataset for Clustering**
+`data/40_preprocessed_classification/articles.parquet`
+
+The resulting DataFrames are exported into a .parquet file
+
+> At this point, do note these datasets are considered ready for clustering and network analysis. The raw datasets weigh around 42 MB and 377 MB
 
 #### Execution Summary
 
