@@ -78,6 +78,10 @@ project/
 │   │    └── articles_step_name_sample.parquet (*) # Dataset samples used to run the Streamlit Dashboard
 │   └── sampler.py # Used to generate the sample files required for Streamlit Dashboard
 │
+├── reports/
+│   ├── templates/            # LaTeX templates (*.tex files, images)
+│   ├── generated/            # Output PDFs or *.tex files
+│   └── generate_report.py    # Script that generates the LaTeX document
 └── README.md           # This file
 ```
 

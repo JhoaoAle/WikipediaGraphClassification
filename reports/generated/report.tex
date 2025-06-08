@@ -1,0 +1,31 @@
+% reports/templates/report_template.tex
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Wikipedia Clustering Report}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Summary Statistics}
+
+Total unique categories: 178839 \\
+Most common category: \textttLiving people (34886 occurrences) \\
+Categories appearing only once: 121369 \\
+Categories appearing only twice: 4901 \\
+Categories appearing only thrice: 8922 \\
+
+\section{Plots}
+
+\includegraphics[width=\linewidth]{ plots/top_categories.png }
+
+\includegraphics[width=\linewidth]{ plots/cumulative_plot.png }
+
+\includegraphics[width=\linewidth]{ plots/histogram_plot.png }
+
+\end{document}

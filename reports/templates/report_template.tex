@@ -1,0 +1,31 @@
+% reports/templates/report_template.tex
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Wikipedia Clustering Report}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Summary Statistics}
+
+Total unique categories: {{ total_unique_categories }} \\
+Most common category: \texttt{{ most_common_category }} ({{ most_common_count }} occurrences) \\
+Categories appearing only once: {{ categories_once }} \\
+Categories appearing only twice: {{ categories_twice }} \\
+Categories appearing only thrice: {{ categories_thrice }} \\
+
+\section{Plots}
+
+\includegraphics[width=\linewidth]{ {{ top_categories_plot_path }} }
+
+\includegraphics[width=\linewidth]{ {{ cumulative_plot_path }} }
+
+\includegraphics[width=\linewidth]{ {{ histogram_plot_path }} }
+
+\end{document}
