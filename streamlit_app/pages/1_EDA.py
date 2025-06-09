@@ -33,7 +33,7 @@ def load_data(relative_path: str):
 
 
 # Load your dataframe here
-df = load_data("../data_sample/articles_30_embedded_sample_1_EDA.parquet")
+df = load_data("../data_sample/articles_30_embedded_sample.parquet")
 
 st.title("Exploratory Data Analysis")
 tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Reducing Dimensionality"])
@@ -219,7 +219,7 @@ with tab2:
 
     
     # Load your dataframe
-    df2 = load_data("../data_sample/articles_40_preprocessed_sample_1_EDA.parquet")
+    df2 = load_data("../data_sample/articles_41_classification_sample.parquet")
 
     # Columns to visualize
     columns = [
