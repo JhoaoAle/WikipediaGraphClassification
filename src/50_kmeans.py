@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-IN_PARQUET = pathlib.Path("data/40_preprocessed_classification/articles.parquet")
+IN_PARQUET = pathlib.Path("data/40_preprocessed/41_classification/articles.parquet")
 OUT_PARQUET = pathlib.Path("data/50_cluster/articles.parquet")
 
 def main():

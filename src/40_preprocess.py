@@ -49,7 +49,7 @@ def main():
     df = df[mask]
 
     # Drop original embedding columns
-    df.drop(columns=embedding_cols + ['cleaned_article_body'], inplace=True)
+    df.drop(columns=embedding_cols + ['cleaned_article_body', 'linked_article_titles'], inplace=True)
 
     # Save preprocessed dataframe
     df.to_parquet(OUT_PARQUET_CLASSIFICATION, index=False)
