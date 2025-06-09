@@ -33,7 +33,7 @@ def load_data(relative_path: str):
 
 
 # Load your dataframe here
-df = load_data("../data_sample/articles_30_embedded_sample.parquet")
+df = load_data("../data_sample/articles_41_classification_sample.parquet")
 
 st.title("Exploratory Data Analysis")
 tab1, tab2, tab3 = st.tabs(["Understanding the Problem", "Inspecting Data", "Reducing Dimensionality"])
@@ -76,7 +76,7 @@ with tab2:
 
     # Section: Word Frequency Distribution
     st.subheader("Distribution of relevant missing values")
-    df['word_count'] = df['cleaned_article_body'].apply(lambda x: len(x.split()))
+    df['word_count']
 
 
     st.markdown("""
@@ -217,10 +217,6 @@ with tab2:
     Another important consideration is that the categories are not mutually exclusive, meaning that an article can belong to multiple categories; this means that having this unequity in the categories distribution could indicate an inherent bias in the dataset, which could affect the results of the analysis.
     """) 
 
-    
-    # Load your dataframe
-    df2 = load_data("../data_sample/articles_41_classification_sample.parquet")
-
     # Columns to visualize
     columns = [
         'char_count',
@@ -238,14 +234,14 @@ with tab2:
     st.markdown("The following histograms show the distribution of selected text features (log-transformed for better readability).")
 
     # Log-transform the columns
-    df_log = df2[columns].apply(lambda x: np.log1p(x))
+    df_log = df[columns].apply(lambda x: np.log1p(x))
     df_log["Feature"] = df_log.index  # Optional, in case you want to melt later
 
     # Plot each histogram with Plotly
     for col in columns:
-        fig = px.histogram(df_log, x=col, nbins=30, title=col, color_discrete_sequence=["skyblue"])
+        fig = px.histogram(df, x=col, nbins=30, title=col, color_discrete_sequence=["skyblue"])
         fig.update_layout(
-            xaxis_title="log(1 + x)",
+            xaxis_title=col,
             yaxis_title="Frequency",
             bargap=0.1,
             margin=dict(l=40, r=20, t=40, b=40)
@@ -258,6 +254,7 @@ with tab3:
 
     st.write("Despite starting with embedding vectors of 768 dimensions, PCA allows us to reduce the dimensionality while retaining a significant amount of variance.")
 
+    df = load_data("../data_sample/articles_30_embedded_sample.parquet")
     # Step 1: Select embedding columns
     embedding_cols = [col for col in df.columns if col.startswith('emb_')]
     X = df[embedding_cols].values
