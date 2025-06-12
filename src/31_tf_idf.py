@@ -17,8 +17,9 @@ OUT_PARQUET = pathlib.Path("data/31_tf_idf/articles.parquet")
 
 def main():
     # Step 1: Load data
+    print("→ Loading parquet:", IN_PARQUET)
     df = pd.read_parquet(IN_PARQUET)
-    print(f"✓ Loaded {len(df):,} rows from {IN_PARQUET}")
+    print(f"✓ Loaded {len(df):,} rows")
     
     # Step 2: TF-IDF Vectorization
     vectorizer = TfidfVectorizer(
