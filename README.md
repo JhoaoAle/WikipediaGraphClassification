@@ -53,23 +53,38 @@ The project is organized as follows:
 project/
 ├── data/
 │   ├── 00_raw/                     # (Optional) Compressed Wikipedia dump(s)
+│   │   ├── simplewiki-latest-pages-articles.xml.bz2
+│   │   └── placeholder.txt
 │   ├── 10_parsed/                  # Stores title + raw Wikitext (Parquet format)
+│   │   ├── articles.parquet
+│   │   └── placeholder.txt
 │   ├── 20_transformed/             # Stores clean_body + destination articles (Parquet format)
+│   │   ├── articles.parquet
+│   │   └── placeholder.txt
 │   ├── 30_embedded/                # Adds embeddings to articles (Parquet format)
-│   └── 40_preprocessed/            # Generates clustering and network analysis-ready dataset (Parquet format)
-│       ├── 41_classification/      # Clustering dataset (Prunned rows)      
-│       └── 42_mapping/             # Graph analysis dataset (Articles map)
+│   │   ├── articles.parquet
+│   │   └── ...
+│   ├── 31_tf_idf/                  # Stores TF-IDF features (Parquet format)
+│   │   └── ...
+│   ├── 40_preprocessed/            # Generates clustering and network analysis-ready dataset (Parquet format)
+│   └── 50_clustered/               # Stores clustering results
 │
 ├── src/
 │   ├── 00_ingest.py                # Script to download Wikipedia dumps
 │   ├── 10_parse.py                 # Script to parse XML to Parquet
 │   ├── 20_transform.py             # Script to clean markup and extract links
 │   ├── 30_embed.py                 # Script to generate embeddings vector of articles
+│   ├── 31_tf_idf.py                # Script to generate TF-IDF features for articles
 │   ├── 40_preprocess.py            # Script to clean a dataset with embeddings
-│   ├── 50_kmeans.py                # Applies KMeans clustering to preprocessed data
-│   ├── 51_dbscan.py                # Applies DBSCAN clustering to preprocessed data
+│   ├── 51_kmeans.py                # Applies KMeans clustering to preprocessed data
+│   ├── 52_hdbscan.py               # Applies HDBSCAN clustering to preprocessed data
+│   ├── 53_louvain.py               # Applies Louvain community detection
+│   ├── 61_graph_generating.py      # Script to generate graph structures for analysis
+│   ├── analysis/
+│   │   └── category_analysis.py    # Analysis scripts for categories and more
 │   └── utils/
 │       ├── stream_bz2.py           # Utility for streaming bz2 compressed files
+│       ├── textclean.py            # Utility functions for text cleaning
 │       └── wikiclean.py            # Utility functions for cleaning Wikitext and columns
 │
 ├── streamlit_app/
@@ -78,7 +93,7 @@ project/
 │   │   └── 1_EDA.py                # First dashboard section. Works with dataset as-is; before cleaning
 │   ├── data_sample/
 │   │   └── articles_step_name_sample.parquet (*) # Dataset samples used to run the Streamlit Dashboard
-│   └── sampler.py # Used to generate the sample files required for Streamlit Dashboard
+│   └── sampler.py                  # Used to generate the sample files required for Streamlit Dashboard
 │
 ├── reports/
 │   ├── templates/                  # LaTeX templates (*.tex files, images)

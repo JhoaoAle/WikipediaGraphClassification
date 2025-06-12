@@ -6,6 +6,8 @@ from tqdm.auto import tqdm
 import pathlib
 import math
 from torch.cuda.amp import autocast
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import normalize
 
 # Configuration
 IN_PARQUET = pathlib.Path("data/20_transformed/articles.parquet")
@@ -92,7 +94,9 @@ def main():
     model = initialize_model()
     
     # Load data
+    print("→ Loading parquet:", IN_PARQUET)
     df = pd.read_parquet(IN_PARQUET)
+    print(f"✓ Loaded {len(df):,} rows")
     texts = df["cleaned_article_body"].astype(str).tolist()
     print(f"✓ Loaded {len(texts)} texts from {IN_PARQUET}")
     
@@ -103,18 +107,30 @@ def main():
     # Generate embeddings
     embeddings = generate_embeddings(model, texts, batch_size)
     
-    # Save results
-    embedding_cols = pd.DataFrame(
-        embeddings,
-        columns=[f"emb_{i}" for i in range(embeddings.shape[1])]
+    # Step 4: Dimensionality Reduction (optional but useful)
+    svd = TruncatedSVD(n_components=200, random_state=42)
+    print("⏳ Reducing dimensionality of embeddings with TruncatedSVD...")
+    X_reduced = svd.fit_transform(embeddings)
+    X_reduced = normalize(X_reduced)
+    print(f"✓ Reduced embedding shape: {X_reduced.shape}")
+
+    # Step 5: Construct reduced embedding DataFrame
+    print("⏳ Constructing reduced embedding DataFrame...")
+    reduced_df = pd.DataFrame(
+        tqdm(X_reduced, desc="Building DataFrame"),
+        columns=[f"emb_{i}" for i in range(X_reduced.shape[1])]
     )
-    df = pd.concat([df.reset_index(drop=True), embedding_cols], axis=1)
-    
+    df = pd.concat([df.reset_index(drop=True), reduced_df], axis=1)
+
+    print(f"✓ Explained variance (sum): {svd.explained_variance_ratio_.sum():.3f}")
+
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(OUT_PARQUET, index=False)
-    print(f"✓ Saved embeddings to {OUT_PARQUET}")
-    print(f"  - Embedding shape: {embeddings.shape}")
-    print(f"  - Memory usage: {embeddings.nbytes / 1024**2:.2f} MB")
+    print(f"✓ Saved TF-IDF features to {OUT_PARQUET}")
+    print(f"✓ Wrote {OUT_PARQUET} with {len(df)} rows")
+
+
+
 
 if __name__ == "__main__":
     main()
