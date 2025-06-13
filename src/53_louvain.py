@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pathlib
 
 IN_PARQUET = pathlib.Path("data/40_preprocessed/42_mapping/articles.parquet")
-OUT_PARQUET = pathlib.Path("data/50_clustered/52_louvain/articles.parquet")
+OUT_PARQUET = pathlib.Path("data/50_clustered/53_louvain/articles.parquet")
 
 def main():
     print("→ Loading parquet:", IN_PARQUET)
@@ -37,25 +37,29 @@ def main():
     partition = community_louvain.best_partition(G)
     nx.set_node_attributes(G, partition, 'louvain_community')
 
-
-    OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)  # Make sure directory exists
-    print("📝 Adding Louvain cluster labels to DataFrame...")
+    # Map partition results back to DataFrame
     df['louvain_community'] = df['title'].map(partition)
 
-    # --- Save to Parquet ---
+    OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)  # Make sure directory exists
+
     print(f"💾 Saving DataFrame with clusters to {OUT_PARQUET}...")
     df.to_parquet(OUT_PARQUET, index=False)
 
     # --- Report community detection stats ---
     print("📊 Community detection report:")
     num_communities = len(set(partition.values()))
-    community_sizes = pd.Series(list(partition.values())).value_counts().sort_index()
+    community_sizes = pd.Series(list(partition.values())).value_counts().sort_values(ascending=False)
     modularity = community_louvain.modularity(partition, G)
 
     print(f"🔢 Number of communities: {num_communities}")
     print(f"📈 Modularity: {modularity:.4f}")
-    print("📦 Community sizes:")
-    for comm_id, size in community_sizes.items():
+    print("📦 Community sizes (>10% of total):")
+
+    total_nodes = len(G)
+    threshold = total_nodes * 0.10
+    large_communities = community_sizes[community_sizes > threshold]
+
+    for comm_id, size in large_communities.items():
         print(f"  - Community {comm_id}: {size} nodes")
 
 if __name__ == "__main__":

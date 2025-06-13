@@ -107,29 +107,17 @@ def main():
     # Generate embeddings
     embeddings = generate_embeddings(model, texts, batch_size)
     
-    # Step 4: Dimensionality Reduction (optional but useful)
-    svd = TruncatedSVD(n_components=200, random_state=42)
-    print("⏳ Reducing dimensionality of embeddings with TruncatedSVD...")
-    X_reduced = svd.fit_transform(embeddings)
-    X_reduced = normalize(X_reduced)
-    print(f"✓ Reduced embedding shape: {X_reduced.shape}")
-
-    # Step 5: Construct reduced embedding DataFrame
-    print("⏳ Constructing reduced embedding DataFrame...")
-    reduced_df = pd.DataFrame(
-        tqdm(X_reduced, desc="Building DataFrame"),
-        columns=[f"emb_{i}" for i in range(X_reduced.shape[1])]
+    print("⏳ Constructing embedding DataFrame...")
+    embedding_df = pd.DataFrame(
+        tqdm(embeddings, desc="Building DataFrame"),
+        columns=[f"emb_{i}" for i in range(embeddings.shape[1])]
     )
-    df = pd.concat([df.reset_index(drop=True), reduced_df], axis=1)
-
-    print(f"✓ Explained variance (sum): {svd.explained_variance_ratio_.sum():.3f}")
+    df = pd.concat([df.reset_index(drop=True), embedding_df], axis=1)
 
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(OUT_PARQUET, index=False)
-    print(f"✓ Saved TF-IDF features to {OUT_PARQUET}")
+    print(f"✓ Saved embeddings to {OUT_PARQUET}")
     print(f"✓ Wrote {OUT_PARQUET} with {len(df)} rows")
-
-
 
 
 if __name__ == "__main__":
