@@ -13,29 +13,35 @@ def main():
     df = pd.read_parquet(IN_PARQUET)
     print(f"✓ Loaded {len(df):,} rows")
 
-    # 1. Select only numerical columns
-    numerical_cols = df.select_dtypes(include=[np.number]).columns
-    print(f"🔢 Found {len(numerical_cols)} numerical columns")
+    # 1. Select only numerical columns excluding article_id
+    numerical_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if 'article_id' in numerical_cols:
+        numerical_cols.remove('article_id')
+    print(f"🔢 Using {len(numerical_cols)} numerical columns for clustering")
 
-    X = df[numerical_cols].fillna(0)  # Ensure no NaNs
+    # 2. Standardize features
+    X = df[numerical_cols].fillna(0)
     print("⚖️ Standardizing features...")
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # 2. Apply KMeans
+    # 3. Apply KMeans
     print(f"🧠 Running KMeans with {N_CLUSTERS} clusters...")
     kmeans = KMeans(n_clusters=N_CLUSTERS, n_init='auto', verbose=0, random_state=42)
     df['kmeans_cluster'] = kmeans.fit_predict(X_scaled)
 
-    # 3. Save results
+    # 4. Keep only article_id and cluster assignment
+    result_df = df[['article_id', 'kmeans_cluster']]
+
+    # 5. Save results
     print(f"💾 Saving clustered DataFrame to {OUT_PARQUET}")
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(OUT_PARQUET, index=False)
+    result_df.to_parquet(OUT_PARQUET, index=False)
 
-    # 4. Report
+    # 6. Report
     print("📊 Clustering summary:")
-    print(f"🔢 Number of clusters: {df['kmeans_cluster'].nunique()}")
-    print(df['kmeans_cluster'].value_counts().sort_index())
+    print(f"🔢 Number of clusters: {result_df['kmeans_cluster'].nunique()}")
+    print(result_df['kmeans_cluster'].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()

@@ -32,18 +32,11 @@ def main():
     X_tfidf = vectorizer.fit_transform(tqdm(df['cleaned_article_body'].fillna(""), desc="TF-IDF Input"))
     print(f"✓ TF-IDF matrix shape: {X_tfidf.shape}")
 
-    # Step 3: Dimensionality Reduction with progress
-    svd = TruncatedSVD(n_components=300, random_state=42)
-    print("⏳ Reducing dimensionality with TruncatedSVD...")
-    X_reduced = svd.fit_transform(X_tfidf)
-    X_reduced = normalize(X_reduced)
-    print(f"✓ Reduced TF-IDF shape: {X_reduced.shape}")
-
     # Step 4: Add reduced TF-IDF features to DataFrame
     print("⏳ Constructing TF-IDF feature DataFrame...")
     tfidf_df = pd.DataFrame(
-        tqdm(X_reduced, desc="Building DataFrame"),
-        columns=[f"tfidf_{i}" for i in range(X_reduced.shape[1])]
+        tqdm(X_tfidf, desc="Building DataFrame"),
+        columns=[f"emb_{i}" for i in range(X_tfidf.shape[1])]
     )
     df = pd.concat([df.reset_index(drop=True), tfidf_df], axis=1)
 
@@ -52,7 +45,7 @@ def main():
     df.to_parquet(OUT_PARQUET, index=False)
     print(f"✓ Saved TF-IDF features to {OUT_PARQUET}")
 
-    print(f"Explained variance (sum): {svd.explained_variance_ratio_.sum():.3f}")
+    
 
 if __name__ == "__main__":
     main()
