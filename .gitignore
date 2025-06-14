@@ -25,3 +25,5 @@ simplewiki-latest-pages-articles.xml.bz2
 articles.parquet
 tentative_readme.md
 Playground.ipynb
+wikipedia_graph.gexf
+wikipedia_top10k_louvain.gexf

@@ -10,8 +10,9 @@
     - [Step 0: Ingest Data (Optional)](#step-0-ingest-data-optional)
     - [Step 1: Parse XML to Parquet](#step-1-parse-xml-to-parquet)
     - [Step 2: Transform and Clean Data](#step-2-transform-and-clean-data)
-    - [Step 3: Generate embeddings vector](#step-3-generate-embeddings-vector)
-    - [Step 4: Preprocess the generated dataset](#step-4-preprocess-the-generated-dataset)
+    - [Step 3: Generate Embeddings Vector](#step-3-generate-embeddings-vector)
+    - [Step 4: Preprocess the Dataset](#step-4-preprocess-the-dataset)
+    - [Step 5: Perform Clustering](#step-5-perform-clustering)
     - [Execution Summary](#execution-summary)
     - [Streamlit Dashboard execution](#streamlit-dashboard-execution)
   - [📚 Acknowledgements](#-acknowledgements)
@@ -52,34 +53,42 @@ The project is organized as follows:
 ```
 project/
 ├── data/
-│   ├── 00_raw/                     # (Optional) Compressed Wikipedia dump(s)
-│   │   ├── simplewiki-latest-pages-articles.xml.bz2
-│   │   └── placeholder.txt
-│   ├── 10_parsed/                  # Stores title + raw Wikitext (Parquet format)
-│   │   ├── articles.parquet
-│   │   └── placeholder.txt
-│   ├── 20_transformed/             # Stores clean_body + destination articles (Parquet format)
-│   │   ├── articles.parquet
-│   │   └── placeholder.txt
-│   ├── 30_embedded/                # Adds embeddings to articles (Parquet format)
-│   │   ├── articles.parquet
-│   │   └── ...
-│   ├── 31_tf_idf/                  # Stores TF-IDF features (Parquet format)
-│   │   └── ...
-│   ├── 40_preprocessed/            # Generates clustering and network analysis-ready dataset (Parquet format)
-│   └── 50_clustered/               # Stores clustering results
+│   ├── 00_raw/                       # (Optional) Compressed Wikipedia dump(s)
+│   │   └── simplewiki-latest-pages-articles.xml.bz2
+│   │   
+│   ├── 10_parsed/                    # Stores title + raw Wikitext (Parquet format)
+│   │   └── articles.parquet
+│   │   
+│   ├── 20_transformed/               # Stores clean_body + destination articles (Parquet format)
+│   │   └── articles.parquet
+│   │   
+│   ├── 30_embedded/                  # Adds embeddings to articles (Parquet format)
+│   │   └── articles.parquet
+│   │    
+│   ├── 31_tf_idf/                    # Stores TF-IDF features (Parquet format)
+│   │   └── articles.parquet
+│   │
+│   ├── 40_preprocessed/              # Generates clustering and network analysis-ready dataset (Parquet format)
+│   │   ├── 41_classification
+│   │   │   └── articles.parquet      # Generates clustering dataset ready for K-Means
+│   │   └── 42_mapping
+│   │       ├── articles.parquet      # Generates base dataset for graph_analysis (Louvain)
+│   │       └── graph_dataset.parquet # Edge map based on the articles.parquet file
+
+│   └── 50_clustered/                 # Stores clustering results
 │
 ├── src/
-│   ├── 00_ingest.py                # Script to download Wikipedia dumps
-│   ├── 10_parse.py                 # Script to parse XML to Parquet
-│   ├── 20_transform.py             # Script to clean markup and extract links
-│   ├── 30_embed.py                 # Script to generate embeddings vector of articles
-│   ├── 31_tf_idf.py                # Script to generate TF-IDF features for articles
-│   ├── 40_preprocess.py            # Script to clean a dataset with embeddings
-│   ├── 51_kmeans.py                # Applies KMeans clustering to preprocessed data
-│   ├── 52_hdbscan.py               # Applies HDBSCAN clustering to preprocessed data
-│   ├── 53_louvain.py               # Applies Louvain community detection
-│   ├── 61_graph_generating.py      # Script to generate graph structures for analysis
+│   ├── 00_ingest.py                  # Script to download Wikipedia dumps
+│   ├── 10_parse.py                   # Script to parse XML to Parquet
+│   ├── 20_transform.py               # Script to clean markup and extract links
+│   ├── 30_embed.py                   # Script to generate embeddings vector of articles
+│   ├── 31_tf_idf.py                  # Script to generate TF-IDF features for articles
+│   ├── 40_preprocess.py              # Script to clean a dataset with embeddings
+│   ├── 50_united_clustering.py       # Script to unify both scripts below and their outputs for comparative analysis
+│   ├── 51_kmeans.py                  # Applies KMeans clustering to preprocessed data
+│   ├── 53_louvain.py                 # Applies Louvain community detection to mapping data
+│   ├── 60_compare_clusters.py        # Script to compare the results of both Louvain community detection and K-Means
+│   ├── 61_graph_generating.py        # Script to generate graph structures for analysis
 │   ├── analysis/
 │   │   └── category_analysis.py    # Analysis scripts for categories and more
 │   └── utils/
@@ -128,33 +137,64 @@ python src/10_parse.py
 
 #### Step 2: Transform and Clean Data
 
-Clean the Wikitext markup from the parsed data and extract outgoing links from each article. We obtain text related metadata from the `cleaned_article_body` column. These columns are:
+Parse and clean the Wikitext markup from the articles, extract network-related features, and prepare the data for downstream clustering and graph analysis.
 
-- **char_count**: Total number of characters in the text (including spaces and punctuation).
+We perform the following operations:
 
-- **word_count**: Total number of words in the text.
+  - **Title normalization:** Convert article titles to lowercase for consistent matching.
 
-- **sentence_count**: Total number of sentences, split using punctuation marks like `.`, `!`, and `?`.
+  - **Link extraction:** Extract all internal article links from the Wikitext body using extract_links, and clean them using clean_linked_articles.
 
-- **avg_word_length**: Average length of the words in the text.
+  - **Link filtering:** Filter the extracted links to retain only those that point to other valid article titles in the dataset.
 
-- **avg_sentence_length**: Average number of words per sentence.
+  - **Section counting:** Count the number of section headers (== Section ==) as a proxy for article structure.
 
-- **uppercase_word_count**: Number of words that are fully uppercase.
+  - **Category extraction:** Extract MediaWiki categories from the Wikitext.
 
-- **stopword_ratio**: Proportion of words that are stopwords (based on a predefined stopword list).
+  - **Wikitext cleaning:** Clean the article body using parallel_clean_wiki_text to remove markup and non-textual content.
 
-- **punctuation_ratio**: Proportion of characters that are punctuation marks.
+  - **Text feature extraction:** Extract several linguistic features from the cleaned text using extract_text_features:
+
+    - **char_count:** Total number of characters (including spaces and punctuation).
+
+    - **word_count:** Total number of words.
+
+    - **sentence_count:** Number of sentences based on delimiters like ., !, ?.
+
+    - **avg_word_length:** Average number of characters per word.
+
+    - **avg_sentence_length:** Average number of words per sentence.
+
+    - **uppercase_word_count:** Count of fully uppercase words.
+
+    - **stopword_ratio:** Ratio of stopwords to total words (based on NLTK's English stopword list).
+
+    - **punctuation_ratio:** Ratio of punctuation characters to total characters.
+
+  - **Semantic cleaning:** Further clean the text for embedding generation using clean_for_embedding.
+
+  - **Article ID assignment:** Assign a unique article_id to each article for downstream referencing.
+
+  - **Network preparation:**
+
+    - Generate a simplified dataset for graph-based analysis (article_id, title, linked_article_titles).
+
+    - Construct a directed edge list (source, target) for graph building using valid article link relationships.
+
+  - **Redirect filtering:** Remove pages that are redirects (detected via cleaned_article_body starting with "redirect"), this helps reduce cost f embedding vectors generation in next steps.
 
 ``` python
 python src/20_transform.py
 ```
 
 **Output:** `data/20_transformed/articles.parquet`
+`data/20_transformed/articles.parquet`: Full dataset with cleaned text and features.
 
-> At this point, the dataset contains the title of the article, the cleaned content, the articles to which it links, the amount of sections and the categories to which it belongs. The dataset weighs around 169 MB
+`data/40_preprocessed/42_mapping/articles.parquet`: Mapping of articles with links, used for graph analysis.
 
-#### Step 3: Generate embeddings vector
+`data/40_preprocessed/42_mapping/graph_dataset.parquet`: Directed edge list (source-target) for graph clustering.
+
+#### Step 3: Generate Embeddings Vector
 
 Generate a set of columns from the embedding vectors for the Wikitext markup from the transformed data and export the result into a .parquet. 
 
@@ -171,7 +211,7 @@ python src/30_embed.py
 
 > At this point, do note this dataset is considered ready for cleaning. This raw dataset weighs around 1.64 GB
 
-#### Step 4: Preprocess the generated dataset
+#### Step 4: Preprocess the Dataset
 
 In this stage, the text column `cleaned_article_body` is dropped, the column `article_id` is generated to keep consistency across the outputs; and two different datasets are generated:
 
@@ -182,7 +222,7 @@ In this dataset, we keep the columns: `article_id`, `title`, and `linked_article
 
 In this dataset 105435 rows are redirects to other articles, which are not important for content-based clustering analysis, therefore, these will be dropped since they don't provide a significative insight for content-based clustering.
 
-A set of columns from the embedding columns which represent the reduced dimensionality of the dataset through PCA and these columns will be included in the dataset whilst the embedding columns are dropped. 
+A set of columns from the embedding columns which represent the reduced dimensionality of the dataset through PCA, or SVD, whichever explains more variance on 200 components, and these columns will be included in the dataset whilst the embedding columns are dropped. 
 
 ``` python
 python src/40_preprocess.py
@@ -198,6 +238,11 @@ python src/40_preprocess.py
 The resulting DataFrames are exported into a .parquet file
 
 > At this point, do note these datasets are considered ready for clustering and network analysis. The raw datasets weigh around 42 MB and 377 MB
+
+#### Step 5: Perform Clustering
+
+
+
 
 #### Execution Summary
 
@@ -234,5 +279,5 @@ streamlit run streamlit_app/home.py
 
 This project uses the `wikitextparser` library to parse Wikitext into structured content.
 
-Documentation up to date
+Documentation NOT up to date
 
