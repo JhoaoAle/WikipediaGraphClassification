@@ -1,14 +1,11 @@
 import pandas as pd
 import networkx as nx
 import ast
-import umap
-import matplotlib.pyplot as plt
-import numpy as np
 from community import community_louvain
-from tqdm import tqdm
 import pathlib
-from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
+# --- Config ---
 IN_PARQUET = pathlib.Path("data/40_preprocessed/42_mapping/articles.parquet")
 
 # --- Load your DataFrame ---
@@ -24,42 +21,46 @@ df['linked_article_titles'] = df['linked_article_titles'].apply(
 print("🧱 Building the graph...")
 G = nx.Graph()
 
-for _, row in tqdm(df.iterrows(), total=len(df), desc="Adding nodes"):
+# Add nodes
+for _, row in df.iterrows():
     G.add_node(row['title'])
 
+# Add edges (only when linked article exists in the dataset)
 article_titles_set = set(df['title'])
 for _, row in tqdm(df.iterrows(), total=len(df), desc="Adding edges"):
+    source = row['title']
     for target in row['linked_article_titles']:
         if target in article_titles_set:
-            G.add_edge(row['title'], target)
+            G.add_edge(source, target)
 
-# --- Louvain clustering ---
+# --- Run Louvain community detection ---
 print("🧠 Running Louvain community detection...")
 partition = community_louvain.best_partition(G)
+
+# Assign community as node attribute in the full graph
 nx.set_node_attributes(G, partition, 'louvain_community')
 
-# --- Create adjacency matrix for layout ---
-print("📐 Building adjacency matrix...")
-nodes = list(G.nodes())
-adj_array = nx.to_scipy_sparse_array(G, nodelist=nodes)
-adj = csr_matrix(adj_array)
+# Add the community assignment to the DataFrame
+df['louvain_community'] = df['title'].map(partition)
 
-# --- UMAP layout (ForceAtlas2-like) ---
-print("🗺️ Computing UMAP layout...")
-embedding = umap.UMAP(n_components=2, metric='euclidean', random_state=42).fit_transform(adj)
+# --- Save the full graph with communities ---
+print("💾 Saving full graph to GEXF...")
+nx.write_gexf(G, "wikipedia_graph.gexf")
 
-# --- Prepare node colors ---
-print("🎨 Coloring communities...")
-communities = [partition[node] for node in nodes]
-unique_communities = list(set(communities))
-community_to_color = {comm: idx for idx, comm in enumerate(unique_communities)}
-colors = [community_to_color[comm] for comm in communities]
+# --- Select Top 10k Nodes by Degree ---
+print("🔎 Selecting top 10,000 nodes by degree...")
+top_nodes = sorted(G.degree, key=lambda x: x[1], reverse=True)[:10_000]
+top_node_names = [node for node, _ in top_nodes]
 
-# --- Plot ---
-print("🖼️ Plotting and saving SVG...")
-plt.figure(figsize=(40, 40))
-plt.scatter(embedding[:, 0], embedding[:, 1], c=colors, cmap='tab20', s=2, alpha=0.8, linewidths=0)
-plt.axis('off')
-plt.tight_layout()
-plt.savefig("wikipedia_umap_louvain.svg", format="svg", dpi=300)
-print("✅ Done! Saved to wikipedia_umap_louvain.svg")
+# --- Induce Subgraph ---
+print("🔧 Inducing subgraph...")
+G_sub = G.subgraph(top_node_names).copy()
+
+# Attach community attribute to subgraph
+nx.set_node_attributes(G_sub, {node: partition[node] for node in G_sub.nodes}, 'louvain_community')
+
+# --- Save subgraph for Gephi ---
+print("💾 Saving top-10k subgraph to GEXF...")
+nx.write_gexf(G_sub, "wikipedia_top10k_louvain.gexf")
+
+print("✅ Done!")

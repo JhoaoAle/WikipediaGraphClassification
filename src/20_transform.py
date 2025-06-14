@@ -23,9 +23,11 @@ def main():
     IN_PARQUET = pathlib.Path("data/10_parsed/articles.parquet")
     OUT_PARQUET = pathlib.Path("data/20_transformed/articles.parquet")
     OUT_PARQUET_MAPPING = pathlib.Path("data/40_preprocessed/42_mapping/articles.parquet")
+    OUT_PARQUET_GRAPH = pathlib.Path("data/40_preprocessed/42_mapping/graph_dataset.parquet")
     
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     OUT_PARQUET_MAPPING.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PARQUET_GRAPH.parent.mkdir(parents=True, exist_ok=True)
 
     print("→ Loading parquet:", IN_PARQUET)
     df = pd.read_parquet(IN_PARQUET)
@@ -79,6 +81,28 @@ def main():
     df_export = df[['article_id', 'title', 'linked_article_titles']]
     df_export.to_parquet(OUT_PARQUET_MAPPING, index=False)
     print("✓ wrote", OUT_PARQUET_MAPPING, len(df_export), "rows")
+
+
+    print("\n→ Generating edge list for graph analysis...")
+
+    # Build title → article_id mapping
+    title_to_id = dict(zip(df_export["title"], df_export["article_id"]))
+
+    # Build edge list: for each row, generate (source_id, dest_id) pairs
+    edges = []
+    for source_title, linked_titles in zip(df_export["title"], df_export["linked_article_titles"]):
+        source_id = title_to_id[source_title]
+        for dest_title in linked_titles:
+            dest_id = title_to_id.get(dest_title)
+            if dest_id is not None:
+                edges.append((source_id, dest_id))
+
+    # Create edge DataFrame
+    df_edges = pd.DataFrame(edges, columns=["source", "target"])
+    
+    # Save edge list
+    df_edges.to_parquet(OUT_PARQUET_GRAPH, index=False)
+    print(f"✓ Wrote edge list to {OUT_PARQUET_GRAPH} with {len(df_edges):,} edges")
     
     ## === Embeddings Generation Dataset ===
     # Save
