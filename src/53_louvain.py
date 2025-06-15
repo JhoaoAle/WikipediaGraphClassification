@@ -50,7 +50,7 @@ def main():
     print("Running Leiden community detection...")
     leiden_partition = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
 
-    partition_leiden = {reverse_mapping[v.index]: comm_id for comm_id, community in enumerate(leiden_partition) for v in community}
+    partition_leiden = {reverse_mapping[v]: comm_id for comm_id, community in enumerate(leiden_partition) for v in community}
     df['leiden_community'] = df['title'].map(partition_leiden)
 
     # --- Save results ---
@@ -60,13 +60,13 @@ def main():
 
     # --- Report ---
     print("\nCommunity detection report:")
-    print(f"🔵 Louvain: {len(set(partition_louvain.values()))} communities")
+    print(f"Louvain: {len(set(partition_louvain.values()))} communities")
     modularity_louvain = community_louvain.modularity(partition_louvain, G)
-    print(f"📦 Louvain Modularity: {modularity_louvain:.4f}")
+    print(f"Louvain Modularity: {modularity_louvain:.4f}")
 
-    print(f"🔴 Leiden:  {len(set(partition_leiden.values()))} communities")
+    print(f"Leiden:  {len(set(partition_leiden.values()))} communities")
     modularity_leiden = leiden_partition.quality()
-    print(f"📦 Leiden Modularity: {modularity_leiden:.4f}")
+    print(f"Leiden Modularity: {modularity_leiden:.4f}")
     
     # Optional: Print top Leiden community sizes
     leiden_sizes = pd.Series(list(partition_leiden.values())).value_counts().sort_values(ascending=False)

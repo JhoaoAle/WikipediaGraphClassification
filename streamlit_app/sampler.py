@@ -5,10 +5,12 @@ from tqdm import tqdm
 
 IN_PARQUET_STEP_3 = pathlib.Path("data/30_embedded/articles.parquet")
 IN_PARQUET_STEP_4 = pathlib.Path("data/40_preprocessed/41_classification/articles.parquet")
+IN_PARQUET_STEP_5 = pathlib.Path("data/50_clustered/articles.parquet")
 
 tasks = [
     (IN_PARQUET_STEP_3, "streamlit_app/data_sample/articles_30_embedded_sample.parquet"),
     (IN_PARQUET_STEP_4, "streamlit_app/data_sample/articles_41_classification_sample.parquet"),
+    (IN_PARQUET_STEP_5, "streamlit_app/data_sample/articles_50_clustered_sample.parquet")
 ]
 
 def process_file(task):

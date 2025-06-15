@@ -18,7 +18,7 @@ def main():
 
     if ARTICLES.exists():
         df = pd.read_parquet(ARTICLES)
-        print("✓ loaded", ARTICLES, len(df), "rows")
+        print("Loaded", ARTICLES, len(df), "rows")
     else:
         # Choose source: local file if exists, otherwise URL
         if LOCAL.exists():
@@ -40,7 +40,6 @@ def main():
 
         df = pd.DataFrame({"title": titles, "body": bodies})
         df.to_parquet(ARTICLES, index=False)
-        print("✓ wrote", ARTICLES, len(df), "rows")
 
 if __name__ == "__main__":
     main()

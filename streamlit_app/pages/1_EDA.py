@@ -10,8 +10,6 @@ from collections import Counter
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA, TruncatedSVD
-import os
-import requests
 from pathlib import Path
 
 # This breaks the code when deploying to streamlit cloud, so we use a relative path
@@ -290,12 +288,25 @@ with tab2:
 
 with tab3:
     st.header("Reducing Dimensionality")
-    st.subheader("PCA vs SVD: Cumulative Explained Variance")
+    st.subheader("PCA vs Truncated-SVD: Cumulative Explained Variance")
 
     st.write("""
         Although we start with high-dimensional embedding vectors (768 dimensions),
         both PCA and Truncated SVD allow us to reduce dimensionality while preserving variance.
         This comparison helps us understand how well each method captures the underlying structure.
+    """)
+
+    st.markdown("""
+    > Principal component analysis is probably the oldest and best known of the techniques of multivariate analysis. It was first introduced by Pearson (1901), and developed independently by Hotelling (1933).  
+    > Like many multivariate methods, it was not widely used until the advent of electronic computers, but it is now well entrenched in virtually every statistical computer package. The central idea of principal component analysis is to reduce the dimensionality of a data set in which there are a large number of interrelated variables, while retaining as much as possible of the variation present in the data set.  
+    > This reduction is achieved by transforming to a new set of variables, the principal components, which are uncorrelated, and which are ordered so that the first few retain most of the variation present in all of the original variables.  
+    >            
+    > — *Jolliffe, I. T. (2002). Principal component analysis for special types of data (pp. 338–372). Springer New York.*
+    """)
+    
+    st.write("""
+        PCA provides the principal components, which are linear combinations of the original variables, while Truncated SVD provides the singular vectors, 
+        which are also linear combinations of the original variables.
     """)
 
     # Load data
