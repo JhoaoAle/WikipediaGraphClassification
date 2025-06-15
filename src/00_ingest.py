@@ -10,14 +10,13 @@ OUT.parent.mkdir(parents=True, exist_ok=True)
 def main():
 
     if OUT.exists():
-        print("✓ already downloaded:", OUT)
+        print("Already downloaded:", OUT)
     else:
-        print("⇣ downloading", URL)
         with requests.get(URL, stream=True, timeout=60) as r, OUT.open("wb") as f:
             r.raise_for_status()
             for chunk in r.iter_content(64_000):
                 f.write(chunk)
-        print("✓ saved to", OUT)
+        print("Saved to", OUT)
 
 if __name__ == "__main__":
     main()
