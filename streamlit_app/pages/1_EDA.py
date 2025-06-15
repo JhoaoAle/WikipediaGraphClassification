@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from collections import Counter
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, TruncatedSVD
 import os
 import requests
 from pathlib import Path
@@ -76,11 +76,9 @@ with tab2:
 
     # Section: Word Frequency Distribution
     st.subheader("Distribution of relevant missing values")
-    df['word_count']
-
 
     st.markdown("""
-    First of all, we want to explore the behaviour of the msot relevant missing columns to understand hwo the data behaves on its initial state. 
+    First of all, we want to explore the behaviour of the most relevant missing columns to understand hwo the data behaves on its initial state. 
     To do so, we will focus in the two most relevant columns in the basic dataset: 
     - `categories` column, which contains the categories assigned to each article in Simple Wikipedia
     - `linked_article_titles` column, which contains the titles of articles that can be accessed from the current article through hyperlinks.
@@ -217,80 +215,168 @@ with tab2:
     Another important consideration is that the categories are not mutually exclusive, meaning that an article can belong to multiple categories; this means that having this unequity in the categories distribution could indicate an inherent bias in the dataset, which could affect the results of the analysis.
     """) 
 
-    # Columns to visualize
-    columns = [
+   
+
+    # Title and description
+    st.title("📊 Distribution of Text Features")
+    st.markdown("""
+    This section shows histograms of selected text features.  
+    Each plot includes a **slider** to control the x-axis range, enabling focused exploration and dynamic binning.
+    """)
+
+    count_features = [
         'char_count',
         'word_count',
         'sentence_count',
+        'uppercase_word_count'
+    ]
+
+    ratio_features = [
         'avg_word_length',
         'avg_sentence_length',
-        'uppercase_word_count',
         'stopword_ratio',
         'punctuation_ratio'
     ]
 
-    # Title and instructions
-    st.title("📊 Distribution of Text Features")
-    st.markdown("The following histograms show the distribution of selected text features (log-transformed for better readability).")
+    st.markdown("### 📘 Count-Based Features (Left) & 📗 Ratio Features (Right)")
+    # Columns layout
+    col1, col2 = st.columns(2)
 
-    # Log-transform the columns
-    df_log = df[columns].apply(lambda x: np.log1p(x))
-    df_log["Feature"] = df_log.index  # Optional, in case you want to melt later
+    # Count-based plots in col1
+    with col1:
+        for feature in count_features:
+            with st.expander(f"{feature}", expanded=True):
+                min_val = float(df[feature].min())
+                max_val = float(df[feature].max())
+                range_vals = st.slider(
+                    f"Range for `{feature}`",
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=(min_val, max_val)
+                )
+                filtered = df[(df[feature] >= range_vals[0]) & (df[feature] <= range_vals[1])]
+                fig = px.histogram(filtered, x=feature, nbins=30, color_discrete_sequence=["skyblue"])
+                fig.update_layout(
+                    xaxis_title=feature,
+                    yaxis_title="Frequency",
+                    bargap=0.1,
+                    margin=dict(l=40, r=20, t=40, b=40)
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-    # Plot each histogram with Plotly
-    for col in columns:
-        fig = px.histogram(df, x=col, nbins=30, title=col, color_discrete_sequence=["skyblue"])
-        fig.update_layout(
-            xaxis_title=col,
-            yaxis_title="Frequency",
-            bargap=0.1,
-            margin=dict(l=40, r=20, t=40, b=40)
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    # Ratio-based plots in col2
+    with col2:
+        for feature in ratio_features:
+            with st.expander(f"{feature}", expanded=True):
+                min_val = float(df[feature].min())
+                max_val = float(df[feature].max())
+                range_vals = st.slider(
+                    f"Range for `{feature}`",
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=(min_val, max_val)
+                )
+                filtered = df[(df[feature] >= range_vals[0]) & (df[feature] <= range_vals[1])]
+                fig = px.histogram(filtered, x=feature, nbins=30, color_discrete_sequence=["lightgreen"])
+                fig.update_layout(
+                    xaxis_title=feature,
+                    yaxis_title="Frequency",
+                    bargap=0.1,
+                    margin=dict(l=40, r=20, t=40, b=40)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
  
+
 with tab3:
     st.header("Reducing Dimensionality")
-    st.subheader("PCA Visualization of Article Embeddings")
+    st.subheader("PCA vs SVD: Cumulative Explained Variance")
 
-    st.write("Despite starting with embedding vectors of 768 dimensions, PCA allows us to reduce the dimensionality while retaining a significant amount of variance.")
+    st.write("""
+        Although we start with high-dimensional embedding vectors (768 dimensions),
+        both PCA and Truncated SVD allow us to reduce dimensionality while preserving variance.
+        This comparison helps us understand how well each method captures the underlying structure.
+    """)
 
+    # Load data
     df = load_data("../data_sample/articles_30_embedded_sample.parquet")
-    # Step 1: Select embedding columns
+
+    # Step 1: Extract embedding vectors
     embedding_cols = [col for col in df.columns if col.startswith('emb_')]
     X = df[embedding_cols].values
     df.drop(columns=embedding_cols + ['cleaned_article_body'], inplace=True)
 
-    # Step 2: Apply PCA
-    pca = PCA()
+    # Step 2: PCA
+    pca = PCA(n_components=300)
     X_pca = pca.fit_transform(X)
+    pca_cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
 
-    # Cumulative variance
-    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
-    components = list(range(1, len(cumulative_variance) + 1))
+    # Step 3: Truncated SVD
+    svd = TruncatedSVD(n_components=300, random_state=42)
+    X_svd = svd.fit_transform(X)
+    svd_cumulative_variance = np.cumsum(svd.explained_variance_ratio_)
 
-    # Create plotly figure
+    # Components index
+    components = list(range(1, 301))
+
+    # Plotly figure
     fig = go.Figure()
+
     fig.add_trace(go.Scatter(
         x=components,
-        y=cumulative_variance,
+        y=pca_cumulative_variance,
         mode='lines+markers',
-        name='Cumulative Explained Variance',
+        name='PCA',
         line=dict(color='royalblue'),
-        marker=dict(size=6)
+        marker=dict(size=1)
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=components,
+        y=svd_cumulative_variance,
+        mode='lines+markers',
+        name='Truncated SVD',
+        line=dict(color='firebrick'),
+        marker=dict(size=1)
     ))
 
     fig.update_layout(
-        title='Explained Variance by PCA Components',
-        xaxis_title='Number of PCA Components',
+        title='Cumulative Explained Variance: PCA vs Truncated SVD',
+        xaxis_title='Number of Components',
         yaxis_title='Cumulative Explained Variance',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(gridcolor='lightgray'),
         yaxis=dict(gridcolor='lightgray'),
-        height=500
+        height=400,
+        legend=dict(bgcolor='rgba(255,255,255,0.5)')
     )
 
     # Show chart
     st.plotly_chart(fig, use_container_width=True)
-    st.write("The plot above shows the cumulative explained variance as we increase the number of PCA components. Each point represents the total variance explained by the first n components.")
-    st.write("As we can see, the first 200 components already explain over 90% of the variance in the data, which is a good balance between dimensionality reduction and information preservation.")
+
+    st.markdown("""
+The plot above shows the **cumulative explained variance** as we increase the number of components for both **PCA** and **Truncated SVD**.
+Each point on the lines represents the total variance retained by the first *n* components, giving us insight into how much of the original data’s structure is preserved after dimensionality reduction.
+
+We observe that the first **200 components** capture approximately **88.66%** of the variance using PCA and **88.59%** with Truncated SVD.  
+This strong alignment between the two methods highlights an important insight: despite using different mathematical strategies, both techniques are effectively capturing the **same essential structure** of the data.
+
+### Why are the curves almost identical?
+
+- **PCA** computes the eigenvectors of the covariance matrix of the data, centering it and projecting it onto directions of maximal variance.
+- **Truncated SVD** performs a low-rank approximation directly on the (uncentered) data matrix.
+- When the input data is **dense and well-behaved** (like our sentence embeddings), Truncated SVD approximates PCA very closely.
+
+### Why is this similarity relevant?
+
+- **Interpretability & Trust**: The near-identical variance retention curves reinforce confidence in the results — the variance captured is intrinsic to the data, not an artifact of the method.
+- **Flexibility**: Since both methods yield similar outcomes, we can choose based on **speed**, **scalability**, or **tooling support** without sacrificing quality.
+- **Validation of Embedding Quality**: The smooth shape of the curves suggests that information is well distributed across embedding dimensions — a desirable property in semantic spaces.
+
+### Conclusion
+
+The convergence of PCA and Truncated SVD results validates our choice of **200 components** as an efficient trade-off between dimensionality reduction and information preservation.  
+This allows us to reduce from 768 to 200 dimensions while still retaining **nearly 89%** of the original variance — enabling faster processing, simpler models, and better visualization without significant loss of semantic content.
+""")
+

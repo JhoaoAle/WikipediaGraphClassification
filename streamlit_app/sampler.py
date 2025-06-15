@@ -14,7 +14,7 @@ tasks = [
 def process_file(task):
     in_path, out_path = task
     df = pd.read_parquet(in_path)
-    df_sample = df.sample(n=10000, random_state=42)
+    df_sample = df.sample(n=12000, random_state=42)
     df_sample.to_parquet(out_path, index=False)
 
 if __name__ == "__main__":

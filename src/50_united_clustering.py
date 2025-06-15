@@ -12,7 +12,7 @@ SCRIPT_LOUVAIN = "src/53_louvain.py"
 
 # Input and output parquet files
 IN_PARQUET_KMEANS = pathlib.Path("data/50_clustered/51_k_means/articles.parquet")
-IN_PARQUET_LOUVAIN = pathlib.Path("data/50_clustered/53_louvain/articles.parquet")
+IN_PARQUET_LOUVAIN = pathlib.Path("data/50_clustered/53_louvain_leiden/articles.parquet")
 OUT_PARQUET = pathlib.Path("data/50_clustered/articles.parquet")
 
 def run_script(script_path):

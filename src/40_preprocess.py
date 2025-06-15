@@ -71,7 +71,7 @@ def main():
     df_final = df_final[mask]
 
     # Drop unnecessary columns
-    df_final.drop(columns=emb_cols + ['cleaned_article_body', 'linked_article_titles'], inplace=True)
+    df_final.drop(columns=emb_cols + ['cleaned_article_body'], inplace=True)
 
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     df_final.to_parquet(OUT_PARQUET, index=False)
