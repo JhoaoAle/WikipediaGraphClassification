@@ -5,6 +5,8 @@ import igraph as ig
 from concurrent.futures import ThreadPoolExecutor
 
 IN_PARQUET = pathlib.Path("data/40_preprocessed/42_mapping/graph_dataset.parquet")
+OUTPUT_PATH = pathlib.Path("data/50_clustered/graph_sample_nodes.txt")
+OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def random_walk_sample(g: ig.Graph, target_size: int, jump_prob: float = 0.15) -> list:
@@ -118,6 +120,19 @@ def main():
     print(f"🎯 Target sample size (15%): {int(0.15 * g.vcount())}")
     sampled_nodes = random_walk_sample(g, target_size=int(0.15 * g.vcount()))
     g_sample = g.subgraph(sampled_nodes)
+
+    # 🔎 Get original node names from sampled node indices
+    index_to_node = {idx: node for node, idx in node_to_index.items()}
+    sampled_node_names = [index_to_node[idx] for idx in sampled_nodes]
+
+    # 💾 Save to text file
+    
+
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        for node in sorted(sampled_node_names):
+            f.write(str(node) + "\n")
+
+    print(f"📄 Saved {len(sampled_node_names)} sampled node titles to {OUTPUT_PATH}")
 
     print(f"📉 Sampled subgraph: {g_sample.vcount()} nodes, {g_sample.ecount()} edges")
     
