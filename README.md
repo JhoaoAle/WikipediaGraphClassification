@@ -269,7 +269,7 @@ python src/40_preprocess.py
 #### Internal Pipeline
 
 <p align="center">
-  <a href="./pipeline.svg">
+  <a href="https://raw.githubusercontent.com/JhoaoAle/WikipediaGraphClassification/refs/heads/develop/pipeline.svg">
     <img src="./pipeline.svg" width="1000" alt="Pipeline Diagram">
   </a>
 </p>
