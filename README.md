@@ -268,7 +268,11 @@ python src/40_preprocess.py
 
 #### Internal Pipeline
 
-![Pipeline Diagram](./pipeline.svg)
+<p align="center">
+  <a href="./pipeline.svg">
+    <img src="./pipeline.svg" width="800" alt="Pipeline Diagram">
+  </a>
+</p>
 
 #### Streamlit Dashboard execution
 
