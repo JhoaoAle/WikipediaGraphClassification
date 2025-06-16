@@ -267,12 +267,7 @@ python src/40_preprocess.py
 ```
 
 #### Internal Pipeline
-
-<p align="center">
-  <a href="https://raw.githubusercontent.com/JhoaoAle/WikipediaGraphClassification/refs/heads/develop/pipeline.svg">
-    <img src="./pipeline.svg" width="1000" alt="Pipeline Diagram">
-  </a>
-</p>
+[![Pipeline Diagram](pipeline.svg)](https://raw.githubusercontent.com/JhoaoAle/WikipediaGraphClassification/develop/pipeline.svg)
 
 #### Streamlit Dashboard execution
 
