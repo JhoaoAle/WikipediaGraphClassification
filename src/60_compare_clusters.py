@@ -39,6 +39,31 @@ def compare_pair(df, col1, col2):
         "v_measure": v_measure
     }
 
+def analyze_kmeans(df, col="kmeans_cluster"):
+    print(f"📊 Analyzing KMeans clustering: '{col}'")
+
+    if col not in df.columns:
+        print(f"❌ Column '{col}' not found.")
+        return
+
+    cluster_counts = df[col].value_counts().sort_values(ascending=False)
+    n_clusters = cluster_counts.shape[0]
+    total_points = cluster_counts.sum()
+
+    print(f"✅ Total clusters: {n_clusters}")
+    print(f"🧮 Cluster size stats:")
+    print(cluster_counts.describe())
+
+    print(f"\n📌 Top 5 largest clusters:")
+    for i, (cluster_id, size) in enumerate(cluster_counts.head(5).items(), 1):
+        print(f"  {i}. Cluster {cluster_id}: {size} points ({100*size/total_points:.2f}%)")
+
+    return {
+        "total_clusters": n_clusters,
+        "cluster_size_stats": cluster_counts.describe(),
+        "top_clusters": cluster_counts.head(5).to_dict()
+    }
+
 def main():
     df = pd.read_parquet(IN_PARQUET)
 
@@ -51,6 +76,8 @@ def main():
     
     for col1, col2 in pairs:
         results.append(compare_pair(df, col1, col2))
+
+    kmeans_stats = analyze_kmeans(df)
 
 if __name__ == "__main__":
     main()
