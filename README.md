@@ -14,9 +14,9 @@
     - [Step 4: Preprocess the Dataset](#step-4-preprocess-the-dataset)
     - [Step 5: Perform Clustering](#step-5-perform-clustering)
     - [Step 6: Cluster Comparison and Analysis](#step-6-cluster-comparison-and-analysis)
-    - [Execution Summary](#execution-summary)
-    - [Internal Pipeline](#internal-pipeline)
-    - [Streamlit Dashboard execution](#streamlit-dashboard-execution)
+  - [Execution Summary](#execution-summary)
+  - [Internal Pipeline](#internal-pipeline)
+  - [Streamlit Dashboard execution](#streamlit-dashboard-execution)
   - [📚 Acknowledgements](#-acknowledgements)
 
 
