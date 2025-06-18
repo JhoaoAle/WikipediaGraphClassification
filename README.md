@@ -295,7 +295,7 @@ Additional scripts are provided for graph sampling and reporting:
 - `src/62_graph_report.py`: Produces statistics and samples from the article graph for reporting.
 
 
-#### Execution Summary
+### Execution Summary
 
 To run the entire pipeline:
 
@@ -324,10 +324,10 @@ python src/61_graph_generating.py
 python src/62_graph_report.py
 ```
 
-#### Internal Pipeline
+### Internal Pipeline
 [![Pipeline Diagram](pipeline.svg)](https://raw.githubusercontent.com/JhoaoAle/WikipediaGraphClassification/develop/pipeline.svg)
 
-#### Streamlit Dashboard execution
+### Streamlit Dashboard execution
 
 The `streamlit_app/` folder provides an interactive dashboard for exploring, analyzing, and visualizing the processed Wikipedia datasets and clustering results. This app is designed for both exploratory data analysis (EDA) and in-depth inspection of clustering and graph properties.
 
