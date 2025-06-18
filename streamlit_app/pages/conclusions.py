@@ -134,7 +134,7 @@ This suggests that KMeans, in this case, was configured to enforce **uniformity*
 st.subheader("🧩 Final Remarks")
 st.markdown("""
 - The graph exhibits real-world behaviors seen in complex systems: **scale-free**, **modular**, and **small-world**.
-- Community detection via Louvain/Leiden aligns well and supports a **semantically structured corpus**.
+- Community detection via Louvain/Leiden aligns well and supports a **structured corpus**.
 """)
 
 st.warning("""
