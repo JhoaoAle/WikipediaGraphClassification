@@ -13,6 +13,7 @@
     - [Step 3: Generate Embeddings Vector](#step-3-generate-embeddings-vector)
     - [Step 4: Preprocess the Dataset](#step-4-preprocess-the-dataset)
     - [Step 5: Perform Clustering](#step-5-perform-clustering)
+    - [Step 6: Cluster Comparison and Analysis](#step-6-cluster-comparison-and-analysis)
     - [Execution Summary](#execution-summary)
     - [Internal Pipeline](#internal-pipeline)
     - [Streamlit Dashboard execution](#streamlit-dashboard-execution)
@@ -75,7 +76,7 @@ project/
 │   │   └── 42_mapping
 │   │       ├── articles.parquet      # Generates base dataset for graph_analysis (Louvain)
 │   │       └── graph_dataset.parquet # Edge map based on the articles.parquet file
-
+│   │ 
 │   └── 50_clustered/                 # Stores clustering results
 │
 ├── src/
@@ -242,7 +243,56 @@ The resulting DataFrames are exported into a .parquet file
 
 #### Step 5: Perform Clustering
 
+This stage applies both content-based and network-based clustering algorithms to the processed Wikipedia articles. The results are used for downstream analysis and visualization.
 
+**K-Means Clustering**  
+The script `src/51_kmeans.py` applies K-Means clustering to the reduced feature set (PCA/SVD) of article embeddings. Each article is assigned a `kmeans_cluster` label.
+
+```python
+python src/51_kmeans.py
+```
+
+**Output:** `data/50_clustered/51_k_means/articles.parquet` 
+
+**Louvain & Leiden Community Detection**  
+The script `src/53_louvain.py` builds a graph from article links and applies both Louvain and Leiden community detection algorithms. Each article receives `louvain_community` and `leiden_community` labels.
+
+```python
+python src/53_louvain.py
+```
+
+**Output:** `data/50_clustered/53_louvain_leiden/articles.parquet`
+
+**Unified Clustering Output**  
+The script `src/50_united_clustering.py` merges the K-Means and Louvain/Leiden results into a single file for comparative analysis.
+
+```python
+python src/50_united_clustering.py
+```
+
+#### Step 6: Cluster Comparison and Analysis
+
+This stage provides tools to compare and analyze the clustering results.
+
+**Cluster Comparison**  
+The script [`src/60_compare_clusters.py`](src/60_compare_clusters.py) compares the K-Means and Louvain/Leiden cluster assignments using several metrics:
+
+- Adjusted Rand Index (ARI)
+- Normalized Mutual Information (NMI)
+- Homogeneity, Completeness, and V-Measure
+
+```python
+python src/60_compare_clusters.py
+```
+
+- **Input:** `data/50_clustered/articles.parquet`
+- **Output:** Console report with comparison metrics and cluster statistics
+
+**Graph Analysis and Reporting**  
+Additional scripts are provided for graph sampling and reporting:
+
+- `src/61_graph_generating.py`: Generates graph files (e.g., GEXF) for visualization tools like Gephi.
+- `src/62_graph_report.py`: Produces statistics and samples from the article graph for reporting.
 
 
 #### Execution Summary
@@ -262,8 +312,16 @@ python src/20_transform.py
 # 4. Generate embbeding vector
 python src/30_embed.py 
 
-# 5. Generate clen dataset from clustering and network analysis
+# 5. Generate clean dataset from clustering and network analysis
 python src/40_preprocess.py
+
+# 6. Apply clustering and community detection
+python src/50_united_clustering.py
+
+# 7. Perform graph analysis
+python src/60_compare_clusters.py
+python src/61_graph_generating.py
+python src/62_graph_report.py
 ```
 
 #### Internal Pipeline
@@ -271,20 +329,49 @@ python src/40_preprocess.py
 
 #### Streamlit Dashboard execution
 
+The `streamlit_app/` folder provides an interactive dashboard for exploring, analyzing, and visualizing the processed Wikipedia datasets and clustering results. This app is designed for both exploratory data analysis (EDA) and in-depth inspection of clustering and graph properties.
+
+- **Pages Overview:**
+  - [`home.py`](streamlit_app/home.py): Main entry point; displays project overview and README.
+  - `pages/1_EDA.py`:  
+    - Exploratory Data Analysis (EDA) of article features, categories, and missing values.
+    - Visualizes text statistics, category distributions, and dimensionality reduction (PCA/SVD).
+  - `pages/2_cluster_analysis.py`:  
+    - Compares clustering results (KMeans, Louvain, Leiden) using metrics such as ARI, NMI, Homogeneity, Completeness, and V-Measure.
+    - Visualizes cluster mapping with heatmaps and Sankey diagrams.
+  - `pages/3_graph_analysis.py`:  
+    - Interactive graph visualization using PyVis and NetworkX.
+    - Explore communities, node centrality, and shortest paths in a GEXF-exported graph sample.
+  - `pages/conclusions.py`:  
+    - Summarizes key findings, network properties, and insights from clustering and community detection.
+
+- **Sample Data:**  
+  The `data_sample/` folder contains small Parquet and GEXF files for quick dashboard loading:
+  - `articles_30_embedded_sample.parquet`
+  - `articles_41_classification_sample.parquet`
+  - `articles_50_clustered_sample.parquet`
+  - `wikipedia_top200_louvain.gexf`
+
+**Purpose:**  
+The Streamlit app enables:
+- Fast, visual exploration of the Wikipedia dataset at each pipeline stage.
+- Interactive comparison of clustering and community detection results.
+- Graph-based exploration of article relationships and communities.
+- Communication of insights and conclusions in an accessible format.
+
 Given you have the file generated by Step 3, you should be able to check first page of the Streamlit Dashboard, EDA.
-In order to do so, you must run this command, while on the root project folder:
+
+After running the pipeline, you are ready to explore the frontend report, to do so you must run the following commands:
 
 ``` python
+python streamlit_app/sampler.py
 streamlit run streamlit_app/home.py
 ```
-
-
-
 
 
 ### 📚 Acknowledgements
 
 This project uses the `wikitextparser` library to parse Wikitext into structured content.
 
-Documentation NOT up to date
+Documentation up to date
 
